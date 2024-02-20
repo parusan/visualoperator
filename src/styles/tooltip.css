@@ -1,0 +1,39 @@
+
+.tooltip {
+    position: relative;
+  }
+  .tooltip .tooltiptext {
+  visibility: hidden;
+  font-size: 10px;
+  line-height: 12px;
+  background-color: rgba(0 0 0 / 0.6);
+  color: var(--figma-color-text-secondary);
+  text-align: center;
+  padding: 6px;
+  border-radius: 4px;
+  position: absolute;
+  top: 140%;
+  left: 0;
+  z-index: 1;
+  min-width: 96px;
+
+}
+.tooltip .tooltiptext.tooltipLeft {
+  transform: translateX(90%);
+}
+.tooltip .tooltiptext.tooltipRight {
+  transform: translateX(-90%);
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+  animation: fadeIn 1s forwards;
+  visibility: visible;
+}
+
+@keyframes fadeIn {
+    0% { opacity: 0;visibility: hidden; }
+    1% { opacity: 0;visibility: visible; }
+    85% { opacity: 0; }
+    100% { opacity: 1; }
+}

@@ -1,0 +1,217 @@
+<div class="container" id="picontainer">
+    <div class="header">
+      <div class="messages" id="info">
+        <div class="message-container">
+          <figma-icon size="M" type="danger" purpose="danger" id="message-icon-danger"></figma-icon>
+          <figma-icon size="M" type="ok" purpose="ok" id="message-icon-ok"></figma-icon>
+          <div  class="message" id="message">Select the element to clone</div>
+        </div>
+      </div>
+      <clones-slot id="c0"></clones-slot>
+    </div>
+    <div id="content">
+      <translation-slot id="t0"></translation-slot>
+      <rotation-slot id="r0"></rotation-slot>
+    </div>
+    <div class="footer spacer-top">
+      <div class="actions">
+        <button id="clone" class="action-button">Clone</button>   
+      </div>
+    </div>
+</div>
+<script>
+// Init
+let container = document.getElementById('picontainer');
+let parameters={
+  };
+
+
+// Click on the clone button
+
+document.getElementById('clone').onclick = () => {
+  // First thing we clear the error messages
+  document.getElementById('info').classList.remove('hasInfo');
+  // And then go
+  // For now we only handle 1 transformation of each type
+  const nbclones = parseInt(parameters.c0['clones-x'].value,10);
+
+  const gapx = parseInt(parameters.t0['x-base'].value, 10);
+  const gapy = parseInt(parameters.t0['y-base'].value, 10);
+  const spacingMode = parseInt(parameters.t0.mode.value, 10);
+  const spacingOrigin = parseInt(parameters.t0.origin.value, 10);
+
+  const angle = parseInt(parameters.r0['angle'].value, 10); 
+  const rotationMode = parseInt(parameters.r0.mode.value, 10);
+
+  let normalizedControls=parameters.t0['curve-controls'].value;
+  let normalizedControlsR=parameters.r0['curve-controls'].value;
+  let rotationOrigin=parameters.r0['origin'].value
+
+
+  parent.postMessage(
+    { pluginMessage: 
+      { type: 'clone-selection', nbclones, gapx, gapy, normalizedControls, angle, normalizedControlsR,rotationOrigin, spacingMode,rotationMode,spacingOrigin} 
+    }, '*'
+  );
+}
+
+// We listen to all the events from the UI Components (not the UI of the plugin) that send their data to register the parameters
+// Parameters are registered at initialization, and at any change
+document.addEventListener("update-controls", function(e) {
+    parameters[event.detail.id]=event.detail.data;
+    console.log(parameters);
+        });
+
+
+// Event to set the message depending on the selection done by the user
+
+onmessage = (event) => {
+   if(event.data.pluginMessage.type==='update-message') {
+    setMessage(event.data.pluginMessage.message, event.data.pluginMessage.messType); 
+  }
+  if(event.data.pluginMessage.type==='empty-ghost') {
+    document.dispatchEvent(new CustomEvent("empty-ghost", {
+      composed: true,
+      bubbles: true
+    }));
+  }
+  if(event.data.pluginMessage.type==='update-ghost') {
+    document.dispatchEvent(new CustomEvent("update-ghost", {
+      detail: {'svg': event.data.pluginMessage.svg},
+      composed: true,
+      bubbles: true
+    }));
+  }
+}
+
+function setMessage(mess, type){
+  document.getElementById('message').innerHTML = mess;
+  if (type==='ok') { document.getElementById('info').classList.add('infoOk'); return 0; }
+  document.getElementById('info').classList.remove('infoOk');
+}
+
+
+</script>
+<script src="./components/bezierinput.js"></script>
+<script src="./components/zoominput.js"></script>
+<script src="./components/origininput.js"></script>
+<script src="./components/figmaicon.js"></script>
+<script src="./components/textinput.js"></script>
+<script src="./components/figmaselect.js"></script>
+<script src="./components/icontoggle.js"></script>
+<script src="./components/translationslot.js"></script>
+<script src="./components/rotationslot.js"></script>
+<script src="./components/clonesslot.js"></script>
+
+<style>
+
+  html {
+    font-family: Inter, sans-serif;
+    font-size: 11px;
+    background: var(--figma-color-bg);
+    color: var(--figma-color-text);
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  .container {
+    display: flex;
+    flex-direction:column;
+    box-sizing: border-box;
+    height: 100%;
+    overflow-x: hidden;
+  }
+  #content {
+    flex: 1;
+    min-height: 100px;
+    overflow-y: auto;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+.actions {
+    padding: 8px 16px;
+    box-sizing: border-box;
+  }
+  .messages {
+    padding: 8px 16px 8px ;
+    box-sizing: border-box;
+  }
+
+
+  .message-container {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    gap: 4px;
+    border-radius: 4px;
+    background: var(--figma-color-bg-secondary);
+    color: var(--figma-color-text-secondary);
+    padding: 8px;
+    border: 1px solid var(--figma-color-border);
+  }
+  #info.infoOk .message-container {
+    border-color: var(--figma-color-border-selected);
+  }
+  #info.infoOk #message-icon-danger { display: none; }
+  #info #message-icon-ok { display: none; }
+  #info.infoOk #message-icon-ok {
+    display: block;
+  }
+
+  .section {padding: 8px 0; width: 100%; box-sizing: border-box;}
+  .row {
+    padding: 0 8px;
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+  }
+  .row > * {
+    flex:1;
+  }
+  .row > .small-flex {
+    flex: 0;
+  }
+  .label {
+    color: var(--figma-color-text-secondary)
+  }
+  .label-main {
+    font-weight: 600;
+    line-height: 32px;
+    padding-left: 8px;
+    color: var(--figma-color-text-secondary)
+  }
+
+  button {
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 11px;
+    background: var(--figma-color-bg-brand);
+    border: 1px solid var(--figma-color-border);
+    color: var(--figma-color-text-onbrand);
+    display: relative;
+    cursor: pointer;
+  }
+
+  .spacer-bottom {
+    border-bottom: 1px solid var(--figma-color-border);
+  }
+  .spacer-top {
+    border-top: 1px solid var(--figma-color-border);
+  }
+
+  .action-button {
+    width: 100%;   
+  }
+
+  
+  .hide {display: none;}  
+
+
+</style>
+<link href="./styles/tooltip.css" rel="stylesheet" />
+<link href="./styles/scrollbar.css" rel="stylesheet" />
