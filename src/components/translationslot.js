@@ -33,24 +33,54 @@ template.innerHTML = /* html */ `
   .spacer-top {
     border-top: 1px solid var(--figma-color-border);
   }
+
+  #main-row {
+    position: relative;
+  }
+
+  #dialog{
+    position: absolute;
+    top: 90%;
+    left:8px;
+    background: var(--figma-color-bg);
+    border: 1px solid var(--figma-color-border);
+    border-radius: 4px;
+    width: calc(100% - 24px);
+    z-index: 2;
+    padding: 8px 8px 8px 4px;
+    box-shadow: var(--elevation-500-modal-window, 0px 2px 14px rgba(0, 0, 0, .15), 0px 0px 0px .5px rgba(0, 0, 0, .2));
+    visibility: hidden;
+  }
+
+  #dialog.open {
+    visibility: visible;
+  }
+
   </style>
   <div class="section section-spacing spacer-bottom">
-    <div class="row">
+    <div class="row" id='main-row'>
+      <icon-switch class="small-flex" id="open-dialog" icon="translation-horizontal" tooltip="Translation settings"></icon-switch>
       <div class="label-main">Translation</div>
-    </div>
-    <div class="row">
-      <figma-select values="Smooth|Fixed" values-icons="curve|fixed-space" id="mode" class='figma-select' tooltip="Type of spacing">
-      </figma-select>
-      <icon-toggle class="small-flex" id="origin" values="side|center" icon-0="side-to-side" icon-1="center-to-center" tooltip-0="side to side" tooltip-1="center to center"></icon-toggle>
-    </div>
-    <div class="row">
-      <text-input id="x-base" tooltip="Horizontal gap" default-value="16" icon="horizontal-arrows" unit="px">
-      </text-input>
-      <text-input id="y-base" tooltip="Vertical gap" default-value="0" icon="vertical-arrows" unit="px">
-      </text-input>
-    </div>
-    <div class="row" id="canvascontainer">
-      <bezier-input id="curve-controls" height="100" width="200"></bezier-input>
+      <div id='dialog'>
+        <div class="row">
+          <div class="label-main">Translation settings</div>
+          <icon-button class="small-flex" id="close-dialog" action='close-dialog' icon="close" tooltip="Close"></icon-button>
+        </div>
+        <div class="row">
+          <figma-select values="Smooth|Fixed" values-icons="curve|fixed-space" id="mode" class='figma-select' tooltip="Type of spacing">
+          </figma-select>
+          <icon-toggle class="small-flex" id="origin" values="side|center" icon-0="side-to-side" icon-1="center-to-center" tooltip-0="side to side" tooltip-1="center to center"></icon-toggle>
+        </div>
+        <div class="row">
+          <text-input id="x-base" tooltip="Horizontal gap" default-value="16" icon="horizontal-arrows" unit="px">
+          </text-input>
+          <text-input id="y-base" tooltip="Vertical gap" default-value="0" icon="vertical-arrows" unit="px">
+          </text-input>
+        </div>
+        <div class="row" id="canvascontainer">
+          <bezier-input id="curve-controls" height="100" width="200"></bezier-input>
+        </div>
+      </div>
     </div>
   </div>
 `; 
@@ -81,8 +111,33 @@ class TranslationSlot extends HTMLElement {
             }
         }
 
-        });
+      });
+
+      this.addEventListener("switch", function(e) {
+        // We listen for events to show or hide the settings of the translation
+        // First we check if it's about this component or not
+        if (e.detail.parent===this.componentId) 
+        { 
+            if (e.detail.value) this.openDialog();
+            if (!e.detail.value) this.closeDialog();
+        }
+      });
+      // We listen for events to close the dialog from the dialog
+      this.addEventListener("trigger", function(e) { 
+        if (e.detail.parent===this.componentId && e.detail.action==="close-dialog") {
+          // We trigger the switch that manages the dialog
+          this.shadowRoot.querySelector('#open-dialog').dispatchEvent(new CustomEvent("reset-switch", {
+            detail: {parent: this.componentId},
+            composed: true,
+            bubbles: true
+          }));         
+        }
+      });
+
   }
+
+    openDialog(){this.shadowRoot.querySelector('#dialog').classList.add('open'); }
+    closeDialog(){this.shadowRoot.querySelector('#dialog').classList.remove('open');}
 
     setId(val) {
       this.componentId = val;
@@ -105,7 +160,8 @@ class TranslationSlot extends HTMLElement {
       this.shadowRoot.querySelector('#x-base').setAttribute('parent', this.componentId);
       this.shadowRoot.querySelector('#y-base').setAttribute('parent', this.componentId);
       this.shadowRoot.querySelector('#curve-controls').setAttribute('parent', this.componentId);
-
+      this.shadowRoot.querySelector('#open-dialog').setAttribute('parent', this.componentId);
+      this.shadowRoot.querySelector('#close-dialog').setAttribute('parent', this.componentId);
     }
 
     register(){
