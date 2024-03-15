@@ -48,6 +48,7 @@ template.innerHTML = /* html */ `
   :host([type="close"]) #close { display: block;}
   :host([type="add"]) #add { display: block;}
   :host([type="remove"]) #remove { display: block;}
+  :host([type="repeat"]) #repeat { display: block;}
 
   </style>
   <div class="icon-container" size="M" type="curve" purpose="default">
@@ -154,6 +155,13 @@ template.innerHTML = /* html */ `
       </svg>
       
       </div>   
+      <div class="icon" id="repeat">
+      <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8.01149 4.674H10.5075L8.91699 3.0825C8.40493 2.57044 7.7671 2.2022 7.0676 2.0148C6.3681 1.82741 5.6316 1.82746 4.93213 2.01496C4.23266 2.20246 3.59487 2.57079 3.08289 3.08293C2.57091 3.59507 2.20277 4.23297 2.01549 4.9325M1.49249 9.822V7.326M1.49249 7.326H3.98849M1.49249 7.326L3.08249 8.9175C3.59455 9.42956 4.23239 9.7978 4.93189 9.9852C5.63138 10.1726 6.36789 10.1725 7.06736 9.98504C7.76683 9.79754 8.40461 9.42921 8.91659 8.91707C9.42857 8.40493 9.79671 7.76703 9.98399 7.0675M10.5075 2.178V4.673" stroke="#C3C3C3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      
+      
+      </div>  
   </div>
 `; 
 

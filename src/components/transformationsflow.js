@@ -25,6 +25,8 @@ template.innerHTML = /* html */ `
   <div class="flow-container">
     <div class="label-row">
       <div class="label label-main" id="title">Target</div>
+      <text-input id="repeat" tooltip="Number of repetitions" default-value="5" icon="repeat" size="S">
+      </text-input>
       <icon-button class="small-flex" id="add" action='del-t' icon="remove" tooltip="Delete flow"></icon-button>
       <icon-button class="small-flex" id="add" action='add-t' icon="add" tooltip="Add operation to flow"></icon-button>
     </div>
@@ -38,6 +40,7 @@ class TransformationsFlow extends HTMLElement {
       super();
       this.componentId='';
       this.params={};
+      this.repeat=0;
 
       const shadowRoot = this.attachShadow({ mode: "open" });
       shadowRoot.appendChild(template.content.cloneNode(true));
@@ -69,6 +72,20 @@ class TransformationsFlow extends HTMLElement {
             this.addTransformation();    
           }
         });
+
+        // We listen to changes of the settings of the flow
+        this.addEventListener("update-params", function(e) {
+          // When we receive a request to update the params
+          // If it is inside this component, we update them, and then send all the params at once to the plugin
+          if (e.detail.parent===this.componentId) 
+          { 
+              if (e.detail.param==='repeat') {
+                this.repeat=e.detail.data;
+                this.register();
+              }
+          }
+  
+        });
  }
 
     setId(val) {
@@ -77,20 +94,43 @@ class TransformationsFlow extends HTMLElement {
 
       // Setting the parent of the UI elements with actions
       this.shadowRoot.querySelector('#add').setAttribute('parent', this.componentId);
+      this.shadowRoot.querySelector('#repeat').setAttribute('parent', this.componentId);
+    }
+
+    setRepeat(val) {
+      if (val) {
+        this.repeat = val;
+        return;
+      }
+      this.repear=5;
+      
     }
 
     addTransformation(){
       console.log('Adding default transformation');
     }
 
-    initDefaul(){
+    initDefault(){
+      // Init number of repetitions
+      this.shadowRoot.querySelector('#repeat').setAttribute('default-value', this.repeat);
+
+      // Init default transformation
       console.log('add first transformation here');
     }
+
+    register(){
+      this.shadowRoot.dispatchEvent(new CustomEvent("update-flow", {
+        detail: { data: this.params, repeat:this.repeat, id: this.componentId},
+      composed: true,
+      bubbles: true
+    }));
+    } 
 
     connectedCallback(){ // Called when inserted into DOM
       // Initialization of the attributes
       this.setId(this.getAttribute('id'));
-      this.initDefaul();
+      this.setRepeat(this.getAttribute('repeat'));
+      this.initDefault();
   }
 
 

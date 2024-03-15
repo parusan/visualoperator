@@ -14,7 +14,7 @@
     </div>
     <div id="content">
       <div class="label-row">
-        <div class="label label-main">Operations</div>
+        <div class="label label-main">Flows of operations</div>
         <icon-button class="small-flex" id="add-group" action='add-flow' icon="add" tooltip="Add operation flow" parent="root"></icon-button>
       </div>
       <div id="flows-container">
@@ -78,6 +78,7 @@ document.addEventListener("update-controls", function(event) {
     console.log(parameters);
         });
 
+
 // Actions coming from buttons in the view
 // Here we want to manage:
 //   - Add group
@@ -92,6 +93,19 @@ document.addEventListener("trigger", function(e) {
   if (e.detail.action==="del-t") {
     deleteFlow(e.detail.parent)  
   }
+});
+
+// We listen to updates to the parameters of the flow
+document.addEventListener("update-flow", function(event) {
+  let index=flows.findIndex( flow => flow.id === event.detail.id);
+      // Remove from the dom and from the parameters if we find the element
+      if (index>=0) {
+        flows[index].transformations=event.detail.data;
+        flows[index].repeat=event.detail.repeat;
+      }
+      else {
+        console.log('Flow not found in list')
+      }   
 });
 
 
@@ -123,21 +137,27 @@ function setMessage(mess, type){
 }
 
 function addFlow(){
-  let id="Flow-"+getFlowID();
-  let flow={id: id,
-            transformations: []
-  };
 
+  // Defining the default parameters here
+  let flow={...getFlow()};
   flows.push(flow);
+
+  // Then we add it to the UI
   const optionTemplate = document.createElement('template');
-  optionTemplate.innerHTML = `<transformations-flow class="flow" id="${id}"></transformations-flow>`;
+  optionTemplate.innerHTML = `<transformations-flow class="flow" id="${flow.id}" repeat="${flow.repeat}"></transformations-flow>`;
   document.getElementById('flows-container').append(...optionTemplate.content.children);  
 }
 
-// Generates a new Unique ID (simple incremental for now)
-function getFlowID(){
+// Generates a new Flow. Sets the default parameters
+function getFlow(){
+  // We generate a new ID
   flowID++;
-  return flowID;
+  // Then set that in a default flow object and go
+  let flow={id: "Flow-"+flowID,
+            transformations: [],
+            repeat:5
+  };
+  return flow;
 }
 
 function deleteFlow(id){

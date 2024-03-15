@@ -19,6 +19,12 @@ template.innerHTML = /* html */ `
     padding: 0 8px;
   }
 
+  .input.size-S{
+    height: 24px;
+    line-height: 24px; 
+    padding: 0;
+  }
+
   input {
     background: transparent;
     color: var(--figma-color-text);
@@ -29,6 +35,10 @@ template.innerHTML = /* html */ `
     outline: none;
     padding: 4px;
     width: 40px;
+  }
+
+  .input.size-S input{
+    width: 24px;
   }
 
   input:hover {
@@ -95,7 +105,7 @@ input[type=number] {
 }
 
   </style>
-  <div class="input scopped-settings" id="inputx">
+  <div class="input scopped-settings" id="input">
   <label class="label tooltip tooltipLeft" for="value-input">
     <figma-icon size="M" type="horizontal-dots" purpose="default" id="icon"></figma-icon>
       <span class="tooltiptext" id="tooltip">Number of horizontal clones</span>
@@ -106,16 +116,18 @@ input[type=number] {
 `; 
 
 class TextInput extends HTMLElement {
-  static get observedAttributes() {return ['parent']; }
+  static get observedAttributes() {return ['parent', 'default-value']; }
     constructor() {
       super();
       this.componentId='';
       this.val=5;
       this.tooltip="";
       this.parent="";
+      this.size="M"
 
       const shadowRoot = this.attachShadow({ mode: "open" });
       shadowRoot.appendChild(template.content.cloneNode(true));
+
   }
 
     setValue(val) {
@@ -139,9 +151,25 @@ class TextInput extends HTMLElement {
           // We register the component a first time in the whole plugin
           this.register(this.val); 
     }
-
+    setSize(size){
+      if(size){
+        if (size==="S"){
+          this.size=size;
+          this.shadowRoot.querySelector("#input").classList.add("size-"+size);
+        }
+      }
+    }
 
     register(val){
+      // First we need to check the value and do some clean up
+      if (val<1){
+        this.setValue(1);
+        return;
+      }
+      if (!Number.isInteger(val)) {
+        this.setValue(Math.floor(val));
+        return;       
+      }
       this.val=val; 
       this.shadowRoot.dispatchEvent(new CustomEvent("update-params", {
         detail: { data: val, "data-label":'', parent: this.parent, param:this.id},
@@ -156,13 +184,15 @@ class TextInput extends HTMLElement {
       this.shadowRoot.querySelector('#value-input').addEventListener('change', () => {
         this.register(this.shadowRoot.querySelector('#value-input').value);
       });
-      this.tooltip = this.getAttribute('tooltip');
+      this.setTooltip(this.getAttribute('tooltip'));
       this.setIcon(this.getAttribute('icon'));
       this.setUnit(this.getAttribute('unit'));
-      this.setValue(this.getAttribute('default-value'));      
+      this.setValue(this.getAttribute('default-value'));
+      this.setSize(this.getAttribute('size'));      
   }
   attributeChangedCallback(name, oldValue, newValue) {
     if(name==='parent') { this.setParent(newValue);}
+    if(name==='default-value') { this.setValue(newValue);}
  }
 
 
