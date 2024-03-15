@@ -1,5 +1,8 @@
 <div class="container" id="picontainer">
-    <div class="header">
+    <div class="header spacer-bottom">
+      <div class="label-row">
+        <div class="label label-main">Target</div>
+      </div>
       <div class="messages" id="info">
         <div class="message-container">
           <figma-icon size="M" type="danger" purpose="danger" id="message-icon-danger"></figma-icon>
@@ -7,11 +10,17 @@
           <div  class="message" id="message">Select the element to clone</div>
         </div>
       </div>
-      <clones-slot id="c0"></clones-slot>
+      <!-- <clones-slot id="c0"></clones-slot> -->
     </div>
     <div id="content">
-      <translation-slot id="t0"></translation-slot>
-      <rotation-slot id="r0"></rotation-slot>
+      <div class="label-row">
+        <div class="label label-main">Operations</div>
+        <icon-button class="small-flex" id="add-group" action='add-flow' icon="add" tooltip="Add operation flow" parent="root"></icon-button>
+      </div>
+      <div id="flows-container">
+      </div>
+      <!-- <translation-slot id="t0"></translation-slot>
+      <rotation-slot id="r0"></rotation-slot> -->
     </div>
     <div class="footer spacer-top">
       <div class="actions">
@@ -24,6 +33,13 @@
 let container = document.getElementById('picontainer');
 let parameters={
   };
+let flowID=0;
+let flows=[];
+
+// Initialization here: default setup
+(function() {
+  addFlow();
+})();
 
 
 // Click on the clone button
@@ -57,10 +73,26 @@ document.getElementById('clone').onclick = () => {
 
 // We listen to all the events from the UI Components (not the UI of the plugin) that send their data to register the parameters
 // Parameters are registered at initialization, and at any change
-document.addEventListener("update-controls", function(e) {
+document.addEventListener("update-controls", function(event) {
     parameters[event.detail.id]=event.detail.data;
     console.log(parameters);
         });
+
+// Actions coming from buttons in the view
+// Here we want to manage:
+//   - Add group
+document.addEventListener("trigger", function(event) {
+    if (event.detail.action==="add-flow"){
+      addFlow();
+    }
+    });
+
+// We listen for events from buttons
+document.addEventListener("trigger", function(e) { 
+  if (e.detail.action==="del-t") {
+    deleteFlow(e.detail.parent)  
+  }
+});
 
 
 // Event to set the message depending on the selection done by the user
@@ -90,6 +122,38 @@ function setMessage(mess, type){
   document.getElementById('info').classList.remove('infoOk');
 }
 
+function addFlow(){
+  let id="Flow-"+getFlowID();
+  let flow={id: id,
+            transformations: []
+  };
+
+  flows.push(flow);
+  const optionTemplate = document.createElement('template');
+  optionTemplate.innerHTML = `<transformations-flow class="flow" id="${id}"></transformations-flow>`;
+  document.getElementById('flows-container').append(...optionTemplate.content.children);  
+}
+
+// Generates a new Unique ID (simple incremental for now)
+function getFlowID(){
+  flowID++;
+  return flowID;
+}
+
+function deleteFlow(id){
+      let index=flows.findIndex( flow => flow.id === id);
+      // Remove from the dom and from the parameters if we find the element
+      if (index>=0) {
+        flows.splice(index, 1);
+        document.getElementById(id).remove(); 
+      }
+      else {
+        console.log('Element not found')
+      }
+   }
+
+
+
 
 </script>
 <script src="./components/bezierinput.js"></script>
@@ -104,6 +168,7 @@ function setMessage(mess, type){
 <script src="./components/clonesslot.js"></script>
 <script src="./components/iconswitch.js"></script>
 <script src="./components/iconbutton.js"></script>
+<script src="./components/transformationsflow.js"></script>
 
 <style>
 
@@ -128,8 +193,16 @@ function setMessage(mess, type){
     height: 100%;
     overflow-x: hidden;
   }
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap:8px;
+    padding: 8px;
+  }
   #content {
     flex: 1;
+    padding: 8px;
+    gap: 8px;
     min-height: 100px;
     overflow-y: auto;
     box-sizing: border-box;
@@ -139,9 +212,12 @@ function setMessage(mess, type){
     padding: 8px 16px;
     box-sizing: border-box;
   }
-  .messages {
-    padding: 8px 16px 8px ;
-    box-sizing: border-box;
+  .label-row {
+    display: flex;
+    padding: 0 8px;
+  }
+  .label-row > .label {
+    flex: 1;
   }
 
 
@@ -155,6 +231,7 @@ function setMessage(mess, type){
     color: var(--figma-color-text-secondary);
     padding: 8px;
     border: 1px solid var(--figma-color-border);
+    margin: 0 8px;
   }
   #info.infoOk .message-container {
     border-color: var(--figma-color-border-selected);
@@ -183,9 +260,8 @@ function setMessage(mess, type){
   }
   .label-main {
     font-weight: 600;
-    line-height: 32px;
-    padding-left: 8px;
-    color: var(--figma-color-text-secondary)
+    line-height: 24px;
+    color: var(--figma-color-text)
   }
 
   button {

@@ -17,7 +17,6 @@ template.innerHTML = /* html */ `
   }
 
   :host([size="L"]) .icon, :host([size="L"]) .icon svg path, :host([size="L"]) .icon svg {  
-    fill: var(--figma-color-text); 
     width: 14px;
     height: 14px;
   }
@@ -47,6 +46,8 @@ template.innerHTML = /* html */ `
   :host([type="check"]) #check { display: block;}
   :host([type="translation-horizontal"]) #translation-horizontal { display: block;}
   :host([type="close"]) #close { display: block;}
+  :host([type="add"]) #add { display: block;}
+  :host([type="remove"]) #remove { display: block;}
 
   </style>
   <div class="icon-container" size="M" type="curve" purpose="default">
@@ -136,10 +137,22 @@ template.innerHTML = /* html */ `
         </svg>      
       </div>   
       <div class="icon" id="close">
+        <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.96025 3.16475C3.74058 2.94508 3.38442 2.94508 3.16475 3.16475C2.94508 3.38442 2.94508 3.74058 3.16475 3.96025L5.20451 6L3.16475 8.03975C2.94508 8.25942 2.94508 8.61558 3.16475 8.83525C3.38442 9.05492 3.74058 9.05492 3.96025 8.83525L6 6.79549L8.03975 8.83525C8.25942 9.05492 8.61558 9.05492 8.83525 8.83525C9.05492 8.61558 9.05492 8.25942 8.83525 8.03975L6.79549 6L8.83525 3.96025C9.05492 3.74058 9.05492 3.38442 8.83525 3.16475C8.61558 2.94508 8.25942 2.94508 8.03975 3.16475L6 5.20451L3.96025 3.16475Z" fill="#0F172A"/>
+        </svg>
+      </div>   
+      <div class="icon" id="add">
       <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3.96025 3.16475C3.74058 2.94508 3.38442 2.94508 3.16475 3.16475C2.94508 3.38442 2.94508 3.74058 3.16475 3.96025L5.20451 6L3.16475 8.03975C2.94508 8.25942 2.94508 8.61558 3.16475 8.83525C3.38442 9.05492 3.74058 9.05492 3.96025 8.83525L6 6.79549L8.03975 8.83525C8.25942 9.05492 8.61558 9.05492 8.83525 8.83525C9.05492 8.61558 9.05492 8.25942 8.83525 8.03975L6.79549 6L8.83525 3.96025C9.05492 3.74058 9.05492 3.38442 8.83525 3.16475C8.61558 2.94508 8.25942 2.94508 8.03975 3.16475L6 5.20451L3.96025 3.16475Z" fill="#0F172A"/>
+      <path d="M2 6C2 5.72386 2.22386 5.5 2.5 5.5H9.5C9.77614 5.5 10 5.72386 10 6C10 6.27614 9.77614 6.5 9.5 6.5H2.5C2.22386 6.5 2 6.27614 2 6Z" fill="#C3C3C3"/>
+      <path d="M6 10C5.72386 10 5.5 9.77614 5.5 9.5L5.5 2.5C5.5 2.22386 5.72386 2 6 2C6.27614 2 6.5 2.22386 6.5 2.5L6.5 9.5C6.5 9.77614 6.27614 10 6 10Z" fill="#C3C3C3"/>
       </svg>
-         
+      
+      </div>   
+      <div class="icon" id="remove">
+      <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 6C2 5.72386 2.22386 5.5 2.5 5.5H9.5C9.77614 5.5 10 5.72386 10 6C10 6.27614 9.77614 6.5 9.5 6.5H2.5C2.22386 6.5 2 6.27614 2 6Z" fill="#C3C3C3"/>
+      </svg>
+      
       </div>   
   </div>
 `; 

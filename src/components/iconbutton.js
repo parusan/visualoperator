@@ -11,7 +11,7 @@ template.innerHTML = /* html */ `
 
   .button-icon {
     font-size: 11px;
-    color: var(--figma-color-text);
+    color: var(--figma-color-text-secondary);
     position: relative;
     cursor: pointer;
     padding: 4px;
