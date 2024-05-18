@@ -53,6 +53,12 @@ class BezierInput extends HTMLElement {
       this.startY=0;
 
       // Define the points as {x, y}
+      // Also default controls // 
+      this.defaultControls = {
+        'start': {'x':0, 'y': 1},
+        'cp1': {'x':0.25, 'y': 0.75},
+        'cp2': {'x':0.75, 'y': 0.25},
+        'end': {'x':1, 'y': 0} }
       this.start = { x: 0, y: 1, r: 5, fill: "#FFF", isDragging: false, restricted: true };
       this.cp1 = { x: 0.25, y: 0.75, r: 5, fill: "#0c8ce9", isDragging: false, restricted: false };
       this.cp2 = { x: 0.75, y: 0.25, r: 5, fill: "#0c8ce9", isDragging: false, restricted: false };

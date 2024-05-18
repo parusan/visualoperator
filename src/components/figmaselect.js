@@ -158,7 +158,7 @@ template.innerHTML = /* html */ `
 
 
 class FigmaSelect extends HTMLElement {
-    static get observedAttributes() {return ['parent', 'default-value']; }
+    static get observedAttributes() {return ['parent', 'default-value', 'id']; }
     constructor() {
       super();
       this.value='';
@@ -282,10 +282,10 @@ class FigmaSelect extends HTMLElement {
         // We checked if we clicked on one of the elemets that component the select
         let idsList = ['select', 'select-icon', 'select-label', 'select-chevron']
         if (idsList.includes(e.composedPath()[0].id)) { 
-            // And then, if we clicked on a select, if the select in contained of the parent slot of the select
+            // And then, if we clicked on a select, if the select is contained of the parent slot of the select
             // By checking the IDs of all the parent elements
             for (let i=0; i<e.composedPath().length; i++) {
-                if (e.composedPath()[i].id === this.parent) inComponent = true; 
+                if (e.composedPath()[i].id === id) inComponent = true; 
                 
             }
             if (inComponent && !this.isOpen) {this.openDropdown(); return 0}
@@ -321,6 +321,7 @@ class FigmaSelect extends HTMLElement {
 
     attributeChangedCallback(name, oldValue, newValue) {
         if(name==='parent') {this.setParent(newValue);}
+        if(name==='id') {this.setId(newValue);}
         if(name==='default-value') {
           if (this.options.length>0){
             let index = this.options.findIndex((el) => el===newValue);
@@ -339,7 +340,7 @@ class FigmaSelect extends HTMLElement {
       // Initialization of the attributes
       this.setId(this.getAttribute('id'));
       this.initOptions(this.getAttribute('values'));
-      document.addEventListener("mouseup", (e) => this.closeOrNot(e, this.selectId)) ;
+      document.addEventListener("mouseup", (e) => this.closeOrNot(e, this.componentId)) ;
       this.initIcons(this.getAttribute('values-icons'));  
       this.setTooltip(this.getAttribute('tooltip'));
       this.parameter=this.getAttribute('parameter');

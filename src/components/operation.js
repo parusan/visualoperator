@@ -4,6 +4,7 @@ const template = document.createElement("template");
 template.innerHTML = /* html */ `
   <style>
 
+
   .operation-preview {
     padding: 0 8px 0 16px;
     display: flex;
@@ -29,26 +30,42 @@ template.innerHTML = /* html */ `
   }
   .label-main {
     font-weight: 600;
-    line-height: 24px;
+    line-height: 32px;
+    color: var(--figma-color-text)
   }
+
   #settings{
     position: fixed;
-    top: 24px;
-    left:8px;
-    right: 8px;
+    top: 0px;
+    left:100%;
+    right: 0px;
     bottom: 0px;
     background: var(--figma-color-bg);
     border: 1px solid var(--figma-color-border);
     border-radius: 4px;
     z-index: 2;
-    padding: 8px 8px 8px 4px;
+    padding: 4px 0;
     box-shadow: var(--elevation-500-modal-window, 0px 2px 14px rgba(0, 0, 0, .15), 0px 0px 0px .5px rgba(0, 0, 0, .2));
     visibility: hidden;
+    transition: left ease-out 80ms;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #settings-header {
+    padding: 4px 8px;
+  }
+
+  #settings-body {
+    flex: 1;
+    overflow-y: scroll;
+    overflow-x: hidden;
   }
 
   #settings.open {
     visibility: visible;
-  }
+    left:16px;
+  } 
 
   #overview {
     line-height: 32px;
@@ -58,17 +75,38 @@ template.innerHTML = /* html */ `
   .spacer-bottom {
     border-bottom: 1px solid var(--figma-color-border);
   }
+  /* width */
+  ::-webkit-scrollbar {
+      width: 8px;
+      padding: 4px;
+    }
+    
+    /* Track */
+    ::-webkit-scrollbar-track {
+      border-radius: 4px;
+      background: transparent;
+      border: 2px solid transparent;
+    
+    }
+    
+    /* Handle */
+    ::-webkit-scrollbar-thumb {
+      background: var(--figma-color-bg-secondary);
+      border-radius: 4px;
+    }
+  
   </style>
+
   <div class="operation-container">
     <div class="operation-preview">
       <icon-button class="small-flex" id="open" action="open-settings" icon="translation" tooltip="Open settings"></icon-button>
-      <figma-select values="Translation|Rotation" default-value="Translation" id="type" class='figma-select' size="S" tooltip="Select type of transformation">
+      <figma-select values="Translation|Rotation" default-value="Translation" id="xxx" role="type" class='figma-select' size="S" tooltip="Select type of transformation">
       </figma-select>
       <div class="label" id="overview">Bézier</div>
       <icon-button class="small-flex" id="del" action="del" icon="remove" tooltip="Remove operation"></icon-button>
     </div>
     <div id="settings">
-      <div id="settings-header spacer-bottom">
+      <div id="settings-header">
         <div class="label-row">
           <div class="label label-main" id="title">Settings</div>
           <icon-button class="small-flex" id="close" action="close-settings" icon="close" tooltip="Close"></icon-button>
@@ -95,11 +133,9 @@ class Operation extends HTMLElement {
         // We listen for events from buttons
         this.addEventListener("trigger", function(e) { 
           if (e.detail.parent===this.componentId && e.detail.action==="open-settings") {
-            console.log('test')
             if (e.detail.parent===this.componentId) this.openSettings();             
           }
           if (e.detail.parent===this.componentId && e.detail.action==="close-settings") {
-            console.log('test')
             if (e.detail.parent===this.componentId) this.closeSettings();             
           }
         }); 
@@ -111,7 +147,7 @@ class Operation extends HTMLElement {
           if (e.detail.parent===this.componentId) 
           { 
               if (e.detail.param==='type') {
-                this.setType(e.detail['data-label'])
+                this.updateType(e.detail['data-label'])
                 // this.register();
               }
           }
@@ -120,7 +156,6 @@ class Operation extends HTMLElement {
   }
 
   set _details(details){
-    console.log(details);
     // If we are here, we know that the type is ok
     this.details={...details};
     this.params={...details.params};
@@ -141,7 +176,8 @@ class Operation extends HTMLElement {
       // Setting the parent of the UI elements with actions
       this.shadowRoot.querySelector('#open').setAttribute('parent', this.componentId);
       this.shadowRoot.querySelector('#close').setAttribute('parent', this.componentId);
-      this.shadowRoot.querySelector('#type').setAttribute('parent', this.componentId);
+      this.shadowRoot.querySelector('[role="type"]').setAttribute('parent', this.componentId);
+      this.shadowRoot.querySelector('[role="type"]').setAttribute('id', this.componentId+'-type');
 
       // We also set the action of the del button here
       this.shadowRoot.querySelector('#del').setAttribute('action', "del-op|"+this.componentId);
@@ -154,37 +190,85 @@ class Operation extends HTMLElement {
       }
     }
 
+    // We initiatlize 
     setType(type){
       this.type=type;
       this.initView(type);
     }
 
+    // We initiatlize 
+    updateType(type){
+      this.type=type;
+      if (type==='Translation') {
+        this.params={...refs.translationDefault}
+
+      }
+      if (type==='Rotation') {
+        this.params={...refs.rotationDefault}
+      }
+      this.initView(type);
+    }
+
     initView(type) {
+
+      // First we remove the settings
+      const myNode = this.shadowRoot.getElementById("settings-body");
+      myNode.innerHTML = '';
+
+      // And then add new ones
+
+      console.log('adding '+type+' to view ')
+      const opTemplate = document.createElement('template'); 
+
       if (type==="Translation"){
-        this.shadowRoot.querySelector('#type').setAttribute('default-value', 'Translation');
+        this.shadowRoot.querySelector('[role="type"]').setAttribute('default-value', 'Translation');
         this.shadowRoot.querySelector('#open').setAttribute('icon', 'translation');
         this.shadowRoot.querySelector('#overview').innerHTML=this.getTranslationOverview();
+        opTemplate.innerHTML = `<translation-settings op="${this.componentId}" id="${this.componentId}-settings"></translation-settings>`;
+        this.shadowRoot.getElementById('settings-body').append(...opTemplate.content.children);  
+        
+        // let details = {
+        //   params: this.params
+        // }
+  
+        customElements.whenDefined("translation-settings").then(() => {
+          this.shadowRoot.getElementById(this.componentId+"-settings")._params=this.params;
+       });   
+
       }
       if (type==="Rotation"){
-        this.shadowRoot.querySelector('#type').setAttribute('default-value', 'Rotation');
+        this.shadowRoot.querySelector('[role="type"]').setAttribute('default-value', 'Rotation');
         this.shadowRoot.querySelector('#open').setAttribute('icon', 'rotation');
         this.shadowRoot.querySelector('#overview').innerHTML=this.getRotationOverview();  
+
+        opTemplate.innerHTML = `<rotation-settings  op="${this.componentId}" id="${this.componentId}-settings"></rotation-settings>`;
+        this.shadowRoot.getElementById('settings-body').append(...opTemplate.content.children);  
+        
+        let details = {
+          params: this.params
+        }
+  
+      //   customElements.whenDefined("op-details").then(() => {
+      //     this.shadowRoot.getElementById(op.id)._details=details;
+      //  });  
       }
+
+
     }
     
     // sets a quick overview of the operation
     getTranslationOverview() {
         let label = "";
-        if (this.params.type==="Bezier") label="Bezier";
-        if (this.params.type=="Fixed") label=this.params['base-x']+'px'
+        if (this.params['x-mode']=="Bezier") label="Bezier";
+        if (this.params['x-mode']=="Fixed") label=this.params['base-x']+'px'
         return label;
     }
 
     // sets a quick overview of the operation
     getRotationOverview() {
       let label = "";
-      if (this.params.type==="Bezier") label="Bezier";
-      if (this.params.type=="Fixed") label=this.params['angle']+'°'
+      if (this.params.mode==="Bezier") label="Bezier";
+      if (this.params.mode=="Fixed") label=this.params['angle']+'°'
       return label;
     }
 

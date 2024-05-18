@@ -19,6 +19,9 @@ template.innerHTML = /* html */ `
   .label {
     color: var(--figma-color-text-secondary)
   }
+  .sublabel {
+    padding: 8px;
+  }
   .label-main {
     font-weight: 600;
     line-height: 32px;
@@ -33,32 +36,42 @@ template.innerHTML = /* html */ `
   .spacer-top {
     border-top: 1px solid var(--figma-color-border);
   }
+
+  #main-row {
+    position: relative;
+  }
+
   </style>
-  <div class="section section-rotation">
-  <div class="row">
-    <div class="label-main">Rotation</div>
-  </div>
-  <div class="row">
-    <figma-select values="Fixed|Smooth" values-icons="fixed-space|curve" id="mode" class='figma-select' tooltip="Select the rotation for each clone">
-    </figma-select>
-  </div>
-  <div class="row">
-    <text-input id="angle" tooltip="Angle" default-value="0" icon="angle" unit="°">
-    </text-input>
-  </div>
-    <div class="row" id="canvascontainer">
-      <bezier-input id="curve-controls" height="100" width="200"></bezier-input>
+  <div class="section section-spacing spacer-bottom">
+    <div class="row">
+      <div class="label sublabel">Horizontal</div>
     </div>
     <div class="row">
-      <origin-input id="origin" size="100"></origin-input>
+        <figma-select values="Smooth|Fixed" values-icons="curve|fixed-space" id="mode-x" class='figma-select' tooltip="Type of spacing"></figma-select>
+        <text-input id="x-base" tooltip="Horizontal gap" default-value="16" icon="horizontal-arrows" unit="px"> </text-input>
     </div>
+    <div class="row" id="canvascontainer">
+      <bezier-input id="curve-controls" height="100" width="184"></bezier-input>
+    </div>
+  </div>
+  <div class="section section-spacing spacer-bottom">
+    <div class="row">
+      <div class="label sublabel">Vertical</div>
+    </div>
+    <div class="row">
+        <figma-select values="Smooth|Fixed" values-icons="curve|fixed-space" id="mode-y" class='figma-select' tooltip="Type of spacing">   </figma-select>
+        <text-input id="y-base" tooltip="Vertical gap" default-value="0" icon="vertical-arrows" unit="px">  </text-input>
+    </div>
+    <div class="row" id="canvascontainer">
+    <bezier-input id="curve-controls-y" height="100" width="184"></bezier-input>
+  </div>
   </div>
 `; 
 
-class RotationSlot extends HTMLElement {
+class SettingsTranslation extends HTMLElement {
     constructor() {
       super();
-      this.type='rotation';
+      this.type='translation';
       this.componentId='';
       this.params={};
 
@@ -73,27 +86,37 @@ class RotationSlot extends HTMLElement {
             this.params[e.detail.param]= {
               value: e.detail.data,
               label: e.detail['data-label']
-            } 
+            }
             this.register();
             // If we are changing the mode, we have to update the view
             if (e.detail.param==="mode") {
               this.switchMode(e.detail)
             }
-            // If the param is angle, we also send that to update the view in the origin selector
-            if (e.detail.param==='angle') {
-              this.shadowRoot.querySelector('#origin').setAttribute('angle', e.detail.data )
-            }
         }
-        });
+
+      });
+
+
   }
+
+  set _params(params){
+    console.log(params);
+    // If we are here, we know that the type is ok
+    this.params={...params};
+    this.initParams(params);
+  }
+
+  get _deta_paramsils(){
+    return this.params;
+  }
+
 
     setId(val) {
       this.componentId = val;
     }
-
     switchMode(val) {
       if (val['data-label']==='Smooth') {this.showCurve(); return 0;}
-      this.hideCurve()
+      this.hideCurve();
     }
 
     showCurve() {
@@ -103,12 +126,17 @@ class RotationSlot extends HTMLElement {
     hideCurve() {
       this.shadowRoot.querySelector('#canvascontainer').style.display = "none";
     }
+    setParentId(opId) {
+      this.shadowRoot.querySelector('#mode-x').setAttribute('parent', opId);
+      this.shadowRoot.querySelector('#mode-y').setAttribute('parent', opId);
+      // // this.shadowRoot.querySelector('#origin').setAttribute('parent', opId);
+      this.shadowRoot.querySelector('#x-base').setAttribute('parent', opId);
+      this.shadowRoot.querySelector('#y-base').setAttribute('parent', opId);
+      this.shadowRoot.querySelector('#curve-controls').setAttribute('parent', opId);
+    }
 
-    setParentId() {
-      this.shadowRoot.querySelector('#mode').setAttribute('parent', this.componentId);
-      this.shadowRoot.querySelector('#angle').setAttribute('parent', this.componentId);
-      this.shadowRoot.querySelector('#curve-controls').setAttribute('parent', this.componentId);
-      this.shadowRoot.querySelector('#origin').setAttribute('parent', this.componentId);
+    initParams(params){
+
     }
 
     register(){
@@ -116,17 +144,17 @@ class RotationSlot extends HTMLElement {
         detail: { data: this.params, type:this.type, id: this.componentId},
       composed: true,
       bubbles: true
-    })); 
+    }));
     } 
 
     connectedCallback(){ // Called when inserted into DOM
       // Initialization of the attributes
       this.setId(this.getAttribute('id'));
-      this.componentId=this.getAttribute('id');
-      this.setParentId();  
+      this.setParentId(this.getAttribute('op'));
+      this.register(this.val);
   }
 
 
 }
 
-window.customElements.define('rotation-slot', RotationSlot);
+window.customElements.define('translation-settings', SettingsTranslation);

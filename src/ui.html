@@ -34,7 +34,6 @@
 let container = document.getElementById('picontainer');
 let parameters={
   };
-let flows=[];
 
 // Settings is the actual dataset used by the plugin
 let settings={
@@ -56,12 +55,24 @@ let defaultsettings={
       ops: [{
         id: 'Flow-12-1',
         type: 'Translation',
-        params: {'type': 'Bezier','base-x': 48},
-      },
-      {
-        id: 'Flow-12-2',
-        type: 'Rotation',
-        params: {'type': 'Fixed','angle': 20},
+        params: {
+          "x-mode":"Bezier", // Bezier or Fixed
+          "offset-x":100,
+          "y-mode":"Fixed", // Bezier or Fixed
+          "offset-y":0,
+          "bezier-controls-x":{
+              'start': {'x':0, 'y': 1},
+              'cp1': {'x':0.25, 'y': 0.75},
+              'cp2': {'x':0.75, 'y': 0.25},
+              'end': {'x':1, 'y': 0}
+          },
+          "bezier-controls-y":{
+              'start': {'x':0, 'y': 1},
+              'cp1': {'x':0.25, 'y': 0.75},
+              'cp2': {'x':0.75, 'y': 0.25},
+              'end': {'x':1, 'y': 0}
+          },
+          },
       }],
       repeat: 8,
     }
@@ -249,8 +260,8 @@ function deleteFlow(id){
 <script src="./components/textinput.js"></script>
 <script src="./components/figmaselect.js"></script>
 <script src="./components/icontoggle.js"></script>
-<script src="./components/translationslot.js"></script>
-<script src="./components/rotationslot.js"></script>
+<script src="./components/settingstranslation.js"></script>
+<script src="./components/settingsrotation.js"></script>
 <script src="./components/clonesslot.js"></script>
 <script src="./components/iconswitch.js"></script>
 <script src="./components/iconbutton.js"></script>

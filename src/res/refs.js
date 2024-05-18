@@ -1,16 +1,31 @@
 export const translationDefault = {
-    "offset-x-type":"Bezier", // Bezier or Fixed
+    "x-mode":"Bezier", // Bezier or Fixed
     "offset-x":100,
-    "offset-y-type":"Fixed", // Bezier or Fixed
+    "y-mode":"Fixed", // Bezier or Fixed
     "offset-y":0,
-    "bezier-controls-x":[{name:"start", x: 0, y: 1},{ name:"cp1", x: 0.25, y: 0.75},{name:"cp2", x: 0.75, y: 0.25},{name:"end", x: 1, y: 0}],
-    "bezier-controls-y":[{name:"start", x: 0, y: 1},{ name:"cp1", x: 0.25, y: 0.75},{name:"cp2", x: 0.75, y: 0.25},{name:"end", x: 1, y: 0}],
+    "bezier-controls-x":{
+        'start': {'x':0, 'y': 1},
+        'cp1': {'x':0.25, 'y': 0.75},
+        'cp2': {'x':0.75, 'y': 0.25},
+        'end': {'x':1, 'y': 0}
+    },
+    "bezier-controls-y":{
+        'start': {'x':0, 'y': 1},
+        'cp1': {'x':0.25, 'y': 0.75},
+        'cp2': {'x':0.75, 'y': 0.25},
+        'end': {'x':1, 'y': 0}
+    },
 }
 
 export const rotationDefault = {
-    "offset-x-type":"Bezier", // Bezier or Fixed
-    "angle":100,
-    "bezier-controls":[{name:"start", x: 0, y: 1},{ name:"cp1", x: 0.25, y: 0.75},{name:"cp2", x: 0.75, y: 0.25},{name:"end", x: 1, y: 0}],
+    "mode":"Fixed", // Bezier or Fixed
+    "angle":20,
+    "bezier-controls":{
+        'start': {'x':0, 'y': 1},
+        'cp1': {'x':0.25, 'y': 0.75},
+        'cp2': {'x':0.75, 'y': 0.25},
+        'end': {'x':1, 'y': 0}
+    },
     "origin": {
         zoom: 2,
         x: 0.5,
