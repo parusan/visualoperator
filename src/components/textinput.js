@@ -20,8 +20,8 @@ template.innerHTML = /* html */ `
   }
 
   .input.size-S{
-    height: 24px;
-    line-height: 24px; 
+    height: 32px;
+    line-height: 32px; 
     padding: 0;
   }
 

@@ -66,7 +66,6 @@ class BezierInput extends HTMLElement {
       this.shadowCanvas = shadowRoot.querySelector("#innercanvas");
       this.ctx = this.shadowCanvas.getContext("2d");
       this.dragArea = shadowRoot.querySelector("#dragarea");
-
   }
 
   connectedCallback(){ // Called when inserted into DOM

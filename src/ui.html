@@ -28,19 +28,86 @@
       </div>
     </div>
 </div>
+
 <script>
 // Init
 let container = document.getElementById('picontainer');
 let parameters={
   };
-let flowID=0;
 let flows=[];
+
+// Settings is the actual dataset used by the plugin
+let settings={
+  flows: [],
+};
+
+// default settings are used to load the initial data set and for data load
+let defaultsettings={
+  flows:[
+    { 
+      id:1,
+      name: 'Flow-1',
+      ops: [],
+      repeat: 5,
+    },
+    { 
+      id:2,
+      name: 'Flow-12',
+      ops: [{
+        id: 'Flow-12-1',
+        type: 'Translation',
+        params: {'type': 'Bezier','base-x': 48},
+      },
+      {
+        id: 'Flow-12-2',
+        type: 'Rotation',
+        params: {'type': 'Fixed','angle': 20},
+      }],
+      repeat: 8,
+    }
+  ],
+};
+
 
 // Initialization here: default setup
 (function() {
-  addFlow();
+  initData(defaultsettings);
 })();
 
+
+// We listen to all the events from the UI Components (not the UI of the plugin) that send their data to register the parameters
+// Parameters are registered at initialization, and at any change
+document.addEventListener("update-controls", function(event) {
+    parameters[event.detail.id]=event.detail.data;
+    console.log(parameters);
+});
+
+
+// Actions coming from buttons in the view
+// Here we want to manage:
+//   - Add group
+document.addEventListener("trigger", function(event) {
+    if (event.detail.action==="add-flow"){
+      addFlow();
+    }
+    if (event.detail.action==="del-flow") {
+      console.log('delete', event.detail.parent)
+    deleteFlow(event.detail.parent);
+  }
+});
+
+// We listen to updates to the parameters of the flow
+document.addEventListener("update-flow", function(event) {
+  let index=settings.flows.findIndex( flow => flow.id === event.detail.id);
+      // Remove from the dom and from the parameters if we find the element
+      if (index>=0) {
+        settings.flows[index].ops=event.detail.data;
+        settings.flows[index].repeat=event.detail.repeat;
+      }
+      else {
+        console.log('Flow not found in list')
+      }   
+});
 
 // Click on the clone button
 
@@ -71,44 +138,6 @@ document.getElementById('clone').onclick = () => {
   );
 }
 
-// We listen to all the events from the UI Components (not the UI of the plugin) that send their data to register the parameters
-// Parameters are registered at initialization, and at any change
-document.addEventListener("update-controls", function(event) {
-    parameters[event.detail.id]=event.detail.data;
-    console.log(parameters);
-        });
-
-
-// Actions coming from buttons in the view
-// Here we want to manage:
-//   - Add group
-document.addEventListener("trigger", function(event) {
-    if (event.detail.action==="add-flow"){
-      addFlow();
-    }
-    });
-
-// We listen for events from buttons
-document.addEventListener("trigger", function(e) { 
-  if (e.detail.action==="del-t") {
-    deleteFlow(e.detail.parent)  
-  }
-});
-
-// We listen to updates to the parameters of the flow
-document.addEventListener("update-flow", function(event) {
-  let index=flows.findIndex( flow => flow.id === event.detail.id);
-      // Remove from the dom and from the parameters if we find the element
-      if (index>=0) {
-        flows[index].transformations=event.detail.data;
-        flows[index].repeat=event.detail.repeat;
-      }
-      else {
-        console.log('Flow not found in list')
-      }   
-});
-
-
 // Event to set the message depending on the selection done by the user
 
 onmessage = (event) => {
@@ -136,35 +165,72 @@ function setMessage(mess, type){
   document.getElementById('info').classList.remove('infoOk');
 }
 
-function addFlow(){
+function initData(data){
+  if (data.flows.length>0){
+    for (let i=0; i<data.flows.length; i++){
+      // We read from the default settings
+      let newflow={...data.flows[i]};
+      newflow.id=getID();
 
-  // Defining the default parameters here
-  let flow={...getFlow()};
-  flows.push(flow);
+      // Then add to the actual data
+      settings.flows.push(newflow);
+      // Then to the view
+      addFlowToView(newflow); 
+    }
+  }
+  else {
+    console.log('Error: no flow found in data')
+  }
+}
 
-  // Then we add it to the UI
-  const optionTemplate = document.createElement('template');
-  optionTemplate.innerHTML = `<transformations-flow class="flow" id="${flow.id}" repeat="${flow.repeat}"></transformations-flow>`;
-  document.getElementById('flows-container').append(...optionTemplate.content.children);  
+function addFlow(){ 
+    // Defining the default parameters here
+    let flow={...getFlow()};
+    settings.flows.push(flow);
+    // Then we add it to the UI
+    console.log('adding flow', flow)
+    addFlowToView(flow);
+}
+
+function addFlowToView(flow){
+
+    let newflow={...flow};
+    // Then we add it to the UI
+    const optionTemplate = document.createElement('template');
+    optionTemplate.innerHTML = `<op-flow class="flow" id="${newflow.id}" name="${newflow.name}" repeat="${newflow.repeat}"></op-flow>`;
+    document.getElementById('flows-container').append(...optionTemplate.content.children);
+    // Then we send the data to the component we just created
+
+   customElements.whenDefined("op-flow").then(() => {
+       document.getElementById(newflow.id)._ops=newflow.ops;
+      //  console.log('in UI', document.getElementById(newflow.id)._ops); 
+    });
 }
 
 // Generates a new Flow. Sets the default parameters
 function getFlow(){
-  // We generate a new ID
-  flowID++;
   // Then set that in a default flow object and go
-  let flow={id: "Flow-"+flowID,
-            transformations: [],
-            repeat:5
+  let id=getID();
+  let flow={
+    id: id,
+    name: 'Flow-'+id,
+    ops: [],
+    repeat:5
   };
-  return flow;
+  return flow; 
+}
+
+function getID(){
+  let id=Date.now();  
+  let id2=Math.floor(Math.random()*1000);
+  return id+"-"+id2
 }
 
 function deleteFlow(id){
-      let index=flows.findIndex( flow => flow.id === id);
+      let index=settings.flows.findIndex( flow => flow.id === id);
       // Remove from the dom and from the parameters if we find the element
       if (index>=0) {
-        flows.splice(index, 1);
+        settings.flows.splice(index, 1);
         document.getElementById(id).remove(); 
       }
       else {
@@ -188,7 +254,9 @@ function deleteFlow(id){
 <script src="./components/clonesslot.js"></script>
 <script src="./components/iconswitch.js"></script>
 <script src="./components/iconbutton.js"></script>
-<script src="./components/transformationsflow.js"></script>
+<script src="./components/opflow.js"></script>
+<script src="./components/operation.js"></script>
+
 
 <style>
 
@@ -221,10 +289,10 @@ function deleteFlow(id){
   }
   #content {
     flex: 1;
-    padding: 8px;
+    padding: 8px 0 8px 8px;
     gap: 8px;
     min-height: 100px;
-    overflow-y: auto;
+    overflow-y: scroll;
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -280,7 +348,7 @@ function deleteFlow(id){
   }
   .label-main {
     font-weight: 600;
-    line-height: 24px;
+    line-height: 32px;
     color: var(--figma-color-text)
   }
 

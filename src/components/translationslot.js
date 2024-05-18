@@ -63,10 +63,6 @@ template.innerHTML = /* html */ `
       <div class="label-main">Translation</div>
       <div id='dialog'>
         <div class="row">
-          <div class="label-main">Translation settings</div>
-          <icon-button class="small-flex" id="close-dialog" action='close-dialog' icon="close" tooltip="Close"></icon-button>
-        </div>
-        <div class="row">
           <figma-select values="Smooth|Fixed" values-icons="curve|fixed-space" id="mode" class='figma-select' tooltip="Type of spacing">
           </figma-select>
           <icon-toggle class="small-flex" id="origin" values="side|center" icon-0="side-to-side" icon-1="center-to-center" tooltip-0="side to side" tooltip-1="center to center"></icon-toggle>
@@ -113,15 +109,7 @@ class TranslationSlot extends HTMLElement {
 
       });
 
-      this.addEventListener("switch", function(e) {
-        // We listen for events to show or hide the settings of the translation
-        // First we check if it's about this component or not
-        if (e.detail.parent===this.componentId) 
-        { 
-            if (e.detail.value) this.openDialog();
-            if (!e.detail.value) this.closeDialog();
-        }
-      });
+
       // We listen for events to close the dialog from the dialog
       this.addEventListener("trigger", function(e) { 
         if (e.detail.parent===this.componentId && e.detail.action==="close-dialog") {
@@ -136,8 +124,6 @@ class TranslationSlot extends HTMLElement {
 
   }
 
-    openDialog(){this.shadowRoot.querySelector('#dialog').classList.add('open'); }
-    closeDialog(){this.shadowRoot.querySelector('#dialog').classList.remove('open');}
 
     setId(val) {
       this.componentId = val;

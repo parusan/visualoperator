@@ -10,11 +10,13 @@ template.innerHTML = /* html */ `
   }
 
   .button-icon {
-    font-size: 11px;
-    color: var(--figma-color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    width: 32px;
     position: relative;
     cursor: pointer;
-    padding: 4px;
     border: none;
     cursor: pointer;
     border: 1px solid transparent;
@@ -80,9 +82,9 @@ template.innerHTML = /* html */ `
 }
 
   </style>
-  <div class="icon-button">
+  <div class="icon-button" id="icon-button">
     <button class="button-icon tooltip" id="button">
-      <figma-icon size="L" type="side-to-side" purpose="default" id="icon"></figma-icon>
+      <figma-icon size="XL" type="side-to-side" purpose="default" id="icon"></figma-icon>
       <span class="tooltiptext" id="tooltip">Side to side</span>
     </button>
   </div>
@@ -90,10 +92,9 @@ template.innerHTML = /* html */ `
 
 
 class IconButton extends HTMLElement {
-    static get observedAttributes() {return ['parent']; }
+    static get observedAttributes() {return ['parent', 'action']; }
     constructor() {
       super();
-      this.value=''; // Value will always be either 0 or 1
       this.parent='';
       this.icon='';
       this.componentId='';
@@ -124,6 +125,13 @@ class IconButton extends HTMLElement {
           this.parent=val;
       }
 
+      setSize(val) {
+        if (val==="S") {
+          this.shadowRoot.querySelector("#icon-button").classList.add('size-S');
+          this.shadowRoot.querySelector("#icon").setAttribute("size", "L");
+        } 
+      }
+
     trigger(){
       this.shadowRoot.dispatchEvent(new CustomEvent("trigger", {
         detail: {action: this.action, parent: this.parent, param:this.componentId},
@@ -138,11 +146,13 @@ class IconButton extends HTMLElement {
         this.setIcon(this.getAttribute('icon'));
         this.setTooltip(this.getAttribute('tooltip'));
         this.setAction(this.getAttribute('action'));
+        this.setSize(this.getAttribute('size'));
         this.shadowRoot.querySelector("#button").onmouseup = (e) => this.trigger();
 
     }
     attributeChangedCallback(name, oldValue, newValue) {
         if(name==='parent') { this.setParent(newValue);}
+        if(name==='action') { this.setAction(newValue);}
      }
 
 

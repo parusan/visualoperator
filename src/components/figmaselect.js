@@ -1,11 +1,31 @@
+//
+//  Parameters
+//  values: the values in the select, separated by "|"
+//  default-value: the default value (the label listed in values)
+//  values-icons: the labels of the icons corresponding to each value in values. If there are fewer icons defined or parameter is not set
+//                then the icons are not shown 
+//   tooltip: the tooltip shown on hover
+//   size: the size of the component
+//   parent: the parent component: important to identify who should be receiving the event fired when the value is selected
+//   id: the id of the field. Should represent the parameter set. Will be sent in the event fired on click
+
+// On value selection, the component returns an event "update-params" with a load "detail" containing the following datapoints:
+// data: the id (or index) of the option selection
+// data-label: the value selected
+// parent: the parent (the target of the event in theory)
+// param: the parameter updated (the id of the object)
+
+
 
 const template = document.createElement("template");
 template.innerHTML = /* html */ `
   <style>
-    :host {
-        width: 100%;
-        min-width: 120px;
-    }
+  :host {
+    width: 100%;
+    min-width: 12px;
+    display: block;
+  }
+
   .figma-select {
     display: flex;
     padding: 8px;
@@ -13,9 +33,16 @@ template.innerHTML = /* html */ `
     border: 1px solid transparent;
     cursor: pointer;
     position: relative;
+    width: 100%;
+    min-width: 120px;
+    box-sizing: border-box;
   }
   .figma-select:hover {
     border-color: var(--figma-color-border);
+  }
+
+  .figma-select.size-S {
+    min-width: 40px;
   }
 
   .select-label {
@@ -70,6 +97,14 @@ template.innerHTML = /* html */ `
     text-overflow: ellipsis;
     width: 10px; /* Fix overflow in flex */
   }
+
+  #select-icon {
+      display: none;
+  }
+
+  #select-icon.show {
+    display: block;
+  }
   
 
   .tooltip {
@@ -112,20 +147,18 @@ template.innerHTML = /* html */ `
 }
 
   </style>
-  <div>
     <div class="figma-select tooltip tooltipLeft" id="select">
-        <figma-icon size="M" type="fixed-space" purpose="default" id="select-icon"></figma-icon>
+        <figma-icon size="M" type="fixed-space" purpose="default" id="select-icon" class="show"></figma-icon>
         <div class="select-label" id="select-label">Value</div>
         <figma-icon size="M" type="chevron-down" purpose="default" id="select-chevron"></figma-icon>
         <span class="tooltiptext" id="tooltip">Tooltip</span>
         <div class="figma-select-dropdown" id="dropdown"></div>
     </div>
-    </div>
 `; 
 
 
 class FigmaSelect extends HTMLElement {
-    static get observedAttributes() {return ['parent']; }
+    static get observedAttributes() {return ['parent', 'default-value']; }
     constructor() {
       super();
       this.value='';
@@ -135,6 +168,7 @@ class FigmaSelect extends HTMLElement {
       this.tooltip = '';
       this.parent='default';
       this.isOpen=false;
+      this.defaultValue="";
 
       const shadowRoot = this.attachShadow({ mode: "open" });
       shadowRoot.appendChild(template.content.cloneNode(true));
@@ -163,25 +197,33 @@ class FigmaSelect extends HTMLElement {
       setParent(val) {
         // We initialize the selection value the first time we set the parent of the component
         this.parent=val;
-        this.setValue(0, this.options[0], 0); 
       }
 
-    setValue(index, val, optionId) {
+    setValue(index, val) {
 
-      // We remove the check in front of all the options
-      let options = this.shadowRoot.querySelectorAll('.option');
-      for (let i=0; i<options.length; i++) {
-        options[i].classList.remove('selected'); 
+      if (this.value != val) {
+
+        this.value=val;
+
+        // We remove the check in front of all the options
+        let options = this.shadowRoot.querySelectorAll('.option');
+        for (let i=0; i<options.length; i++) {
+          options[i].classList.remove('selected'); 
+        }
+        // We add the check in front of the right option
+        this.shadowRoot.querySelector("#option"+index).classList.add('selected');
+        // Then we change the icon inside the main component and set the label
+        this.shadowRoot.querySelector('#select-label').innerHTML = val;
+        this.shadowRoot.querySelector("#select-icon").setAttribute('type', this.icons[index])
+  
+        // Finally we send an event to register the value selected in the main component
+          this.register(index);
       }
-      // We add the check in front of the right option
-      this.shadowRoot.querySelector("#option"+optionId).classList.add('selected');
-      // Then we change the icon inside the main component and set the label
-      this.shadowRoot.querySelector('#select-label').innerHTML = val;
-      this.shadowRoot.querySelector("#select-icon").setAttribute('type', this.icons[index])
- 
-    // Finally we send an event to register the value selected in the main component
-        this.register(index);
 
+    }
+
+    setSize(size){
+      if (size==="S") this.shadowRoot.querySelector("#select").classList.add('size-S');
     }
 
     initOptions(opts) { // initiatializes the options in the list
@@ -193,44 +235,45 @@ class FigmaSelect extends HTMLElement {
                 const optionTemplate = document.createElement('template');
                 let isSelected = i===0 ? 'selected' : '' ; // If this is the first element we tag it as selected
                 let thisId =  'option' + i;
-
                 optionTemplate.innerHTML = `<div class="option ${isSelected}" id="${thisId}">
                 <div class="icon-slot"><figma-icon size="M" type="check" purpose="default" class="select-icon"></figma-icon></div>
                   <div class="option-label">${opts[i]}</div> 
               </div>`;
               this.shadowDropdown.append(...optionTemplate.content.children);
-              this.shadowRoot.querySelector("#"+thisId).onmouseup = (e) => this.optionUp(e, i, opts[i], i)
-              
+              this.shadowRoot.querySelector("#"+thisId).onmouseup = (e) => this.optionUp(e, i, opts[i], i);
+            }
+            // Then we set the current value to the first value
+            // We check first if there is a default option
+            if (this.defaultValue){
+              let index = this.options.findIndex((el) => el===this.defaultValue);
+              if(index>=0){
+                this.setValue(index, this.options[index]); 
+              }
+            }
+            else {
+              this.setValue(0, this.options[0]); 
             }
         }
       }
 
-      initIcons(val) { // initiatializes the icons corresponding to the values
+    initIcons(val) { // initiatializes the icons corresponding to the values
+      if(val){
+        let nbIcons = val.split('|');
         let nbOptions = this.options.length;
-        val = val?.split('|') ?? '';
-        for (let i=0; i<nbOptions; i++) {
-            if (val.length>i) {
-                this.icons.push(val[i])
-            } else {
-                this.icons.push('default');
-            }
-            if (i===0) this.shadowRoot.querySelector('#select-icon').setAttribute('type',val[i]); // If it is the first icon we initialize the component
+        if (nbIcons === nbOptions){
+          this.shadowRoot.querySelector('#select-icon').classList.add("show");
+          val = val?.split('|') ?? '';
+          for (let i=0; i<nbOptions; i++) {
+              if (val.length>i) {
+                  this.icons.push(val[i])
+              } else {
+                  this.icons.push('default');
+              }
+              if (i===0) this.shadowRoot.querySelector('#select-icon').setAttribute('type',val[i]); // If it is the first icon we initialize the component
+          }
         }
       }
-
-
-    connectedCallback(){ // Called when inserted into DOM
-        // Initialization of the attributes
-        this.setId(this.getAttribute('id'));
-        document.addEventListener("mouseup", (e) => this.closeOrNot(e, this.selectId)) ;
-        this.initOptions(this.getAttribute('values'));
-        this.initIcons(this.getAttribute('values-icons'));
-        this.componentId=this.getAttribute('id');
-        this.setTooltip(this.getAttribute('tooltip'));
-        this.type=this.getAttribute('type');
-        this.parameter=this.getAttribute('parameter');
-        this.index=this.getAttribute('index');     
-
+      this.shadowRoot.querySelector('#select-icon').classList.remove("show");
     }
 
     closeOrNot(e, id){
@@ -277,8 +320,35 @@ class FigmaSelect extends HTMLElement {
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
-        if(name==='parent') { this.setParent(newValue);}
+        if(name==='parent') {this.setParent(newValue);}
+        if(name==='default-value') {
+          if (this.options.length>0){
+            let index = this.options.findIndex((el) => el===newValue);
+            if(index>=0){
+              this.setValue(index, this.options[index]); 
+            }          
+            else {
+              this.setValue(0, this.options[0]); 
+            }
+          }
+
+        }
      }
+
+     connectedCallback(){ // Called when inserted into DOM
+      // Initialization of the attributes
+      this.setId(this.getAttribute('id'));
+      this.initOptions(this.getAttribute('values'));
+      document.addEventListener("mouseup", (e) => this.closeOrNot(e, this.selectId)) ;
+      this.initIcons(this.getAttribute('values-icons'));  
+      this.setTooltip(this.getAttribute('tooltip'));
+      this.parameter=this.getAttribute('parameter');
+      this.index=this.getAttribute('index');
+      this.setSize(this.getAttribute('size'));
+      this.defaultValue=this.getAttribute('default-value');
+      this.type=this.getAttribute('type');
+  }
+
 
 
 }
