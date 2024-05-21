@@ -88,8 +88,8 @@ let defaultsettings={
           },
           "origin": {
               zoom: 3,
-              x: 1,
-              y:0
+              x: 0.66,
+              y:0.33
           }
         },
       }],
@@ -142,7 +142,6 @@ document.getElementById('clone').onclick = () => {
   document.getElementById('info').classList.remove('hasInfo');
   // And then go
 
-  console.log('copying with parameters',settings);
 
   parent.postMessage(
     { pluginMessage: 

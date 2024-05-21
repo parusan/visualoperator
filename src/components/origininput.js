@@ -416,7 +416,7 @@ initZoom(zoom){
       this.objectGhost.setAttribute('style', `width: ${objBgSize}; height: ${objBgSize}; left: ${objBgTopLeft};top: ${objBgTopLeft}`);  
       
       // We update the ghost rotation
-      this.objectGhost.style.transform=`rotate(${this.angle}deg)`;
+      this.objectGhost.style.transform=`rotate(-${this.angle}deg)`;
       this.objectGhost.style.transformOrigin=`${dx}px ${dy}px`;
   } 
 

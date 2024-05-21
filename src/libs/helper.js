@@ -29,9 +29,125 @@ export function toFigmaMatrix(matrixObject){
     return figmaMatrix;
 }
 
+export function getTranslationMatrices (settings, repeat) {
+
+    let translations = [];
+    let matricesX = [];
+    let matricesY = [];
+    if (settings.params['x-mode']==='Fixed') matricesX = [...getTranslationFixed(repeat, settings.params['offset-x'])];
+    if (settings.params['x-mode']==='Bezier') matricesX = [...getTranslationBezier(settings.params['bezier-controls-x'],repeat, settings.params['offset-x'])];
+    if (settings.params['y-mode']==='Fixed') matricesY = [...getTranslationFixed(repeat, settings.params['offset-y'])];
+    if (settings.params['y-mode']==='Bezier') matricesY = [...getTranslationBezier(settings.params['bezier-controls-y'],repeat, settings.params['offset-y'])];
+
+    let tx=0;
+    let ty=0;
+    for (let i=0; i<repeat; i++){
+        tx=matricesX[i];
+        ty=matricesY[i];
+        console.log('txty',tx,ty)
+        let matrix = translate(tx,ty);
+        translations.push(matrix);
+    }
+
+    return translations;
+    
+}
+
+
+
+// Calculates on 1 dimension the translations for a fixed spacing between 2 steps
+export function getTranslationFixed (repeat, offset) { // dimension is the size of the shape on that axis
+    let tx=0;
+    let translations=[];
+    for(var i=0; i<repeat; i++) {
+        tx = offset*i;
+        translations.push(tx);
+    }
+    return translations;
+}
+
+
+export function getTranslationBezier (controls,repeat, offset) {
+
+    let bezierMatrix = getNormalizedBezier(controls,repeat);
+    console.log('bezier matrix', bezierMatrix)
+    let translations = [];
+    let totalSoFar = 0;
+    for(var i=0; i<repeat; i++) {
+        // Calculations for the spacing
+        let stepSize = bezierMatrix[i].normalizedGap*offset;
+        let stepTranslation = stepSize;
+        totalSoFar = totalSoFar + stepTranslation;
+        translations.push(totalSoFar)
+    }
+    return translations;
+}
+
+// ******************** ROTATIONS 
+// ***********************************************
+
+export function getRotationMatrices (settings, repeat, nodeInfo) {
+    let rotations = [];
+    if (settings.params['angle-mode']==='Fixed') rotations = [...getFixedRotation(repeat, settings.params.angle, nodeInfo.width, nodeInfo.height, settings.params.origin)];
+    if (settings.params['angle-mode']==='Bezier') rotations = [...getBezierRotation(settings.params['bezier-controls-angle'], repeat, settings.params.angle, nodeInfo.width, nodeInfo.height, settings.params.origin)];
+    console.log('rotations',rotations)
+    return rotations;
+}
+
+// Calculating the rotation matrix
+export function getFixedRotation (repeat, angle, width, height, origin) {
+    let matrix = [];
+    let x=0; // We define the original positions on x and y as =0 as we will combine the matrices with the original matrix that defines the object rotation and position
+    let y=0;
+    console.log('origin', origin)
+    // First we get the center of the object
+    let cx = x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width;
+    let cy = y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height;
+        for(var j=0; j<repeat; j++) {
+            //switching to radians
+            let newAngle = angle*j*(Math.PI/180);
+            if(newAngle>360) newAngle= newAngle % 360; // Getting the remainder in case we are over 360 degrees
+            // The rotation happens around the top left corner, so we translate the object. Here are the new coordinates
+            let newx = Math.cos(newAngle) * x + y * Math.sin(newAngle) - cy * Math.sin(newAngle) - cx * Math.cos(newAngle) + cx
+            let newy = - Math.sin(newAngle) * x + cx * Math.sin(newAngle) + y * Math.cos(newAngle) - cy * Math.cos(newAngle) + cy
+            
+            // let transform = [[Math.cos(newAngle), Math.sin(newAngle), newx],[-Math.sin(newAngle), Math.cos(newAngle), newy ]]
+            let transform = {a:Math.cos(newAngle), b: Math.sin(newAngle), e:newx, c:-Math.sin(newAngle), d:Math.cos(newAngle),f: newy }
+            matrix.push(transform);
+        }
+    return matrix;
+}
+
+
+// Returns a matrix with the angles based on the values of the control points
+export function getBezierRotation (controls,repeat, angle, width, height, origin) {
+    let x=0; // We define the original positions on x and y as =0 as we will combine the matrices with the original matrix that defines the object rotation and position
+    let y=0;
+
+    // First we get the center of the object
+    let cx = x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width;
+    let cy = y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height;
+    let nbSteps = repeat > 0 ? repeat : 1;
+    let bezierMatrix = getNormalizedBezier(controls,nbSteps);
+    let matrix = [];
+    let angleSoFar = 0;
+        for(var j=0; j<repeat; j++) {
+            let newAngle = bezierMatrix[j].normalizedGap*angle*(Math.PI/180);
+            angleSoFar = angleSoFar + newAngle;
+            // The rotation happens around the top left corner, so we translate the object. Here are the new coordinates
+            let newx = Math.cos(angleSoFar) * x + y * Math.sin(angleSoFar) - cy * Math.sin(angleSoFar) - cx * Math.cos(angleSoFar) + cx
+            let newy = - Math.sin(angleSoFar) * x + cx * Math.sin(angleSoFar) + y * Math.cos(angleSoFar) - cy * Math.cos(angleSoFar) + cy
+            
+            // let transform = [[Math.cos(angleSoFar), Math.sin(angleSoFar), newx],[-Math.sin(angleSoFar), Math.cos(angleSoFar), newy ]]
+            let transform = {a:Math.cos(angleSoFar), b: Math.sin(angleSoFar), e:newx, c:-Math.sin(angleSoFar), d:Math.cos(angleSoFar),f: newy }
+            matrix[j] = transform;
+        }
+    return matrix;
+}
+
 // Returns a matrix with the position of the clones in the case of a bezier curve on the Y axis
-// If XorY = 0: X, if 1: Y
-export function getNormalizedBezier (XorY,controls,nbClones) {
+// We always use the Y value of the curve
+export function getNormalizedBezier (controls,nbClones) {
 
     // We initialize time itself
     const time = 1; // Here we set up the time interval used for Bézier curve spacing
@@ -48,11 +164,9 @@ export function getNormalizedBezier (XorY,controls,nbClones) {
     let matrix = [];
     for(var i=0; i<nbClones; i++) {
             t = timeInterval*i; 
-            if (XorY > 0) {
-                bezier = cubic(t, 1-controls[0].y, 1-controls[1].y, 1-controls[2].y, 1-controls[3].y); // calculate the value between 0 and 1
-            } else {
-                bezier = cubic(t, controls[0].x, controls[1].x, controls[2].x, controls[3].x); // calculate the value between 0 and 1
-            }
+
+            bezier = cubic(t, 1-controls.start.y, 1-controls.cp1.y, 1-controls.cp2.y, 1-controls.end.y); // calculate the value between 0 and 1
+
             beziergap = (bezier - prevbezier); // We take the normalized space since the last dot and apply to gap;
             if (beziergap>maxGap) maxGap = beziergap
             prevbezier = bezier;
@@ -70,87 +184,15 @@ export function getNormalizedBezier (XorY,controls,nbClones) {
     return matrix;
 }
 
-
-// Calculates on 1 dimension the translations for a fixed spacing between 2 steps
-export function getTranslationFixed (nbClones, spacingX, spacingY, dimensionX, dimensionY, includeSize) { // dimension is the size of the shape on that axis
-    let tx=0;
-    let ty=0;
-    let translations=[];
-    for(var i=0; i<nbClones; i++) {
-        tx = (includeSize===0) ? (spacingX + dimensionX)*i : spacingX*i;
-        ty = (includeSize===0) ? (spacingY + dimensionY)*i : spacingY*i;
-        let matrix = translate(tx,ty);
-        translations.push(matrix);
-    }
-    return translations;
-}
-
-
-// Returns a matrix with the position of the clones in the case of a bezier curve on the X axis
-export function getTranslationBezier (controls,nbClones, spacingX, spacingY, width, height,includeSize) {
-
-    let bezierMatrixX = getNormalizedBezier(0,controls,nbClones);
-    let bezierMatrixY = getNormalizedBezier(1,controls,nbClones);
-    let translations = [];
-    let totalSoFarX = 0;
-    let totalSoFarY = 0;
-    for(var i=0; i<nbClones; i++) {
-        // Calculations for X
-        let stepSizeX = bezierMatrixX[i].normalizedGap*spacingX;
-        let stepTranslationX = (includeSize===0) ? (stepSizeX + width) : stepSizeX;
-        totalSoFarX = totalSoFarX + stepTranslationX;
-        // Calculations for Y
-        let stepSizeY = bezierMatrixY[i].normalizedGap*spacingY;
-        let stepTranslationY = (includeSize===0) ? (stepSizeY + height) : stepSizeY;
-        totalSoFarY = totalSoFarY + stepTranslationY;
-        let matrix = translate(totalSoFarX,totalSoFarY);
-        translations.push(matrix);
-    }
-    return translations;
-}
-
-// Calculating the rotation matrix
-export function getFixedRotation (nbClonesX, angle, width, height, x, y, origin) {
-    let matrix = [];
-    // First we get the center of the object
-    let cx = x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width;
-    let cy = y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height;
-        for(var j=0; j<nbClonesX; j++) {
-            //switching to radians
-            let newAngle = angle*j*(Math.PI/180);
-            if(newAngle>360) newAngle= newAngle % 360; // Getting the remainder in case we are over 360 degrees
-            // The rotation happens around the top left corner, so we translate the object. Here are the new coordinates
-            let newx = Math.cos(newAngle) * x + y * Math.sin(newAngle) - cy * Math.sin(newAngle) - cx * Math.cos(newAngle) + cx
-            let newy = - Math.sin(newAngle) * x + cx * Math.sin(newAngle) + y * Math.cos(newAngle) - cy * Math.cos(newAngle) + cy
-            
-            // let transform = [[Math.cos(newAngle), Math.sin(newAngle), newx],[-Math.sin(newAngle), Math.cos(newAngle), newy ]]
-            let transform = {a:Math.cos(newAngle), b: Math.sin(newAngle), e:newx, c:-Math.sin(newAngle), d:Math.cos(newAngle),f: newy }
-            matrix.push(transform);
+export function getIdentityMatrices (repeat) {
+    let matrices = [];
+    for (let i =0; i< repeat; i++){
+        let matrix = {
+            a: 1, c: 0, e: 0,
+            b: 0, d: 1, f: 0
+            };
+            matrices.push(matrix);
         }
-    return matrix;
+    return matrices;
+    
 }
-
-
-// Returns a matrix with the angles based on the values of the control points
-export function getBezierRotation (controls,nbClonesX, angle, width, height, x, y, origin) {
-    // First we get the center of the object
-    let cx = x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width;
-    let cy = y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height;
-    let nbSteps = nbClonesX > 0 ? nbClonesX : 1;
-    let bezierMatrix = getNormalizedBezier(1,controls,nbSteps);
-    let matrix = [];
-    let angleSoFar = 0;
-        for(var j=0; j<nbClonesX; j++) {
-            let newAngle = bezierMatrix[j].normalizedGap*angle*(Math.PI/180);
-            angleSoFar = angleSoFar + newAngle;
-            // The rotation happens around the top left corner, so we translate the object. Here are the new coordinates
-            let newx = Math.cos(angleSoFar) * x + y * Math.sin(angleSoFar) - cy * Math.sin(angleSoFar) - cx * Math.cos(angleSoFar) + cx
-            let newy = - Math.sin(angleSoFar) * x + cx * Math.sin(angleSoFar) + y * Math.cos(angleSoFar) - cy * Math.cos(angleSoFar) + cy
-            
-            // let transform = [[Math.cos(angleSoFar), Math.sin(angleSoFar), newx],[-Math.sin(angleSoFar), Math.cos(angleSoFar), newy ]]
-            let transform = {a:Math.cos(angleSoFar), b: Math.sin(angleSoFar), e:newx, c:-Math.sin(angleSoFar), d:Math.cos(angleSoFar),f: newy }
-            matrix[j] = transform;
-        }
-    return matrix;
-}
-
