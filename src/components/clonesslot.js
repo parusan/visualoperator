@@ -39,7 +39,7 @@ template.innerHTML = /* html */ `
     <div class="label-main">Clones</div>
   </div>
   <div class="row ">
-    <text-input id="clones-x" tooltip="Number of horizontal clones" default-value="6" icon="horizontal-dots">
+    <text-input id="clones" role="clones" tooltip="Number of horizontal clones" default-value="6" icon="horizontal-dots">
     </text-input>
   </div>
 </div>
@@ -55,7 +55,7 @@ class ClonesSlot extends HTMLElement {
       const shadowRoot = this.attachShadow({ mode: "open" });
       shadowRoot.appendChild(template.content.cloneNode(true));
 
-      this.addEventListener("update-params", function(e) {
+      this.addEventListener("update-param", function(e) {
         // When we receive a request to update the params
         // If it is inside this component, we update them, and then send all the params at once to the plugin
         if (e.detail.parent===this.componentId) 

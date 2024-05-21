@@ -92,7 +92,7 @@ template.innerHTML = /* html */ `
 
 
 class IconButton extends HTMLElement {
-    static get observedAttributes() {return ['parent', 'action']; }
+    static get observedAttributes() {return ['parent', 'action', 'icon']; }
     constructor() {
       super();
       this.parent='';
@@ -153,6 +153,7 @@ class IconButton extends HTMLElement {
     attributeChangedCallback(name, oldValue, newValue) {
         if(name==='parent') { this.setParent(newValue);}
         if(name==='action') { this.setAction(newValue);}
+        if(name==='icon') { this.setIcon(newValue);}
      }
 
 

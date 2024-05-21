@@ -100,7 +100,7 @@ template.innerHTML = /* html */ `
   <div class="operation-container">
     <div class="operation-preview">
       <icon-button class="small-flex" id="open" action="open-settings" icon="translation" tooltip="Open settings"></icon-button>
-      <figma-select values="Translation|Rotation" default-value="Translation" id="xxx" role="type" class='figma-select' size="S" tooltip="Select type of transformation">
+      <figma-select values="Translation|Rotation" default-value="Translation" id="type" role="type" class='figma-select' size="S" tooltip="Select type of transformation">
       </figma-select>
       <div class="label" id="overview">Bézier</div>
       <icon-button class="small-flex" id="del" action="del" icon="remove" tooltip="Remove operation"></icon-button>
@@ -126,6 +126,7 @@ class Operation extends HTMLElement {
       this.params={};
       this.type="Translation";
       this.parent="";
+      this.flow='';
 
       const shadowRoot = this.attachShadow({ mode: "open" });
       shadowRoot.appendChild(template.content.cloneNode(true));
@@ -133,26 +134,34 @@ class Operation extends HTMLElement {
         // We listen for events from buttons
         this.addEventListener("trigger", function(e) { 
           if (e.detail.parent===this.componentId && e.detail.action==="open-settings") {
-            if (e.detail.parent===this.componentId) this.openSettings();             
+            this.openSettings();             
           }
           if (e.detail.parent===this.componentId && e.detail.action==="close-settings") {
-            if (e.detail.parent===this.componentId) this.closeSettings();             
+            this.closeSettings();             
           }
         }); 
 
-        // We listen to changes of the settings of the flow
-        this.addEventListener("update-params", function(e) {
-          // When we receive a request to update the params
-          // If it is inside this component, we update them, and then send all the params at once to the plugin
-          if (e.detail.parent===this.componentId) 
+        // We listen to changes of the change of the type of flow
+        this.addEventListener("update-param", function(e) {
+          // When we receive a request to update the type
+          // If it is inside this component, we update 
+          if (e.detail.target===this.componentId) 
           { 
               if (e.detail.param==='type') {
-                this.updateType(e.detail['data-label'])
-                // this.register();
+                this.updateType(e.detail['data'])
               }
           }
-  
         });
+
+          // We listen to changes of the change to the parameters of the operation to update locally
+          this.addEventListener("update-params", function(e) {
+            // When we receive a request to update the type
+            // If it is inside this component, we update 
+            if (e.detail.target===this.componentId) 
+            { 
+              this.updateParams(e.detail.data);
+            }
+          });
   }
 
   set _details(details){
@@ -185,8 +194,8 @@ class Operation extends HTMLElement {
 
     setFlow(flowId){
       if(flowId) {
-        this.flowId=flowId;
-        this.shadowRoot.querySelector('#del').setAttribute('parent', this.flowId);
+        this.flow=flowId;
+        this.shadowRoot.querySelector('#del').setAttribute('parent', this.flow);
       }
     }
 
@@ -200,86 +209,80 @@ class Operation extends HTMLElement {
     updateType(type){
       this.type=type;
       if (type==='Translation') {
-        this.params={...refs.translationDefault}
+        this.updateParams(refs.translationDefault);
 
       }
       if (type==='Rotation') {
-        this.params={...refs.rotationDefault}
+        this.updateParams(refs.rotationDefault);
       }
       this.initView(type);
     }
 
-    initView(type) {
+    updateParams(params){
+      this.params = {...params};
+      this.updateOverview();
+      console.log('Operation params updated to: ', params)
+      this.register();
+    }
 
+    register(){
+      this.shadowRoot.dispatchEvent(new CustomEvent("update-flow", {
+        detail: { data: this.params, type:this.type, id: this.componentId, flow: this.flow, target:this.flow},
+      composed: true,
+      bubbles: true
+    }));
+    } 
+
+    initView(type) {
       // First we remove the settings
       const myNode = this.shadowRoot.getElementById("settings-body");
       myNode.innerHTML = '';
 
       // And then add new ones
 
-      console.log('adding '+type+' to view ')
       const opTemplate = document.createElement('template'); 
 
       if (type==="Translation"){
-        this.shadowRoot.querySelector('[role="type"]').setAttribute('default-value', 'Translation');
+        this.shadowRoot.querySelector('[role="type"]')._value='Translation';
         this.shadowRoot.querySelector('#open').setAttribute('icon', 'translation');
-        this.shadowRoot.querySelector('#overview').innerHTML=this.getTranslationOverview();
-        opTemplate.innerHTML = `<translation-settings op="${this.componentId}" id="${this.componentId}-settings"></translation-settings>`;
+
+        opTemplate.innerHTML = `<translation-settings op="${this.componentId}" id="${this.componentId}-settings" flow="${this.flow}"></translation-settings>`;
         this.shadowRoot.getElementById('settings-body').append(...opTemplate.content.children);  
-        
-        // let details = {
-        //   params: this.params
-        // }
   
         customElements.whenDefined("translation-settings").then(() => {
           this.shadowRoot.getElementById(this.componentId+"-settings")._params=this.params;
+          this.shadowRoot.getElementById(this.componentId+"-settings")._flow=this.flow;
        });   
 
       }
       if (type==="Rotation"){
-        this.shadowRoot.querySelector('[role="type"]').setAttribute('default-value', 'Rotation');
+        this.shadowRoot.querySelector('[role="type"]')._value='Rotation';
         this.shadowRoot.querySelector('#open').setAttribute('icon', 'rotation');
-        this.shadowRoot.querySelector('#overview').innerHTML=this.getRotationOverview();  
 
-        opTemplate.innerHTML = `<rotation-settings  op="${this.componentId}" id="${this.componentId}-settings"></rotation-settings>`;
+        opTemplate.innerHTML = `<rotation-settings  op="${this.componentId}" id="${this.componentId}-settings" flow="${this.flow}"></rotation-settings>`;
         this.shadowRoot.getElementById('settings-body').append(...opTemplate.content.children);  
-        
-        let details = {
-          params: this.params
-        }
   
-      //   customElements.whenDefined("op-details").then(() => {
-      //     this.shadowRoot.getElementById(op.id)._details=details;
-      //  });  
+        customElements.whenDefined("rotation-settings").then(() => {
+          this.shadowRoot.getElementById(this.componentId+"-settings")._params=this.params;
+          this.shadowRoot.getElementById(this.componentId+"-settings")._flow=this.flow;
+       });  
       }
-
-
+      this.updateOverview();
     }
     
     // sets a quick overview of the operation
-    getTranslationOverview() {
-        let label = "";
-        if (this.params['x-mode']=="Bezier") label="Bezier";
-        if (this.params['x-mode']=="Fixed") label=this.params['base-x']+'px'
-        return label;
-    }
-
-    // sets a quick overview of the operation
-    getRotationOverview() {
+    updateOverview() {
       let label = "";
-      if (this.params.mode==="Bezier") label="Bezier";
-      if (this.params.mode=="Fixed") label=this.params['angle']+'°'
-      return label;
+      if(this.type==="Translation") {
+        if (this.params['x-mode']=="Bezier") label="Bezier";
+        if (this.params['x-mode']=="Fixed") label=this.params['offset-x']+'px'
+      }
+      if(this.type==="Rotation") {
+        if (this.params['angle-mode']==="Bezier") label="Bezier";
+        if (this.params['angle-mode']=="Fixed") label=this.params['angle']+'°'
+      }
+        this.shadowRoot.querySelector('#overview').innerHTML=label;
     }
-
-
-    register(){
-      this.shadowRoot.dispatchEvent(new CustomEvent("update-flow", {
-        detail: { data: this.params, repeat:this.repeat, id: this.componentId},
-      composed: true,
-      bubbles: true
-    }));
-    } 
 
     connectedCallback(){ // Called when inserted into DOM
       // Initialization of the attributes

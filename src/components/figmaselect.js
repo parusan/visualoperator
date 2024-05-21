@@ -9,7 +9,7 @@
 //   parent: the parent component: important to identify who should be receiving the event fired when the value is selected
 //   id: the id of the field. Should represent the parameter set. Will be sent in the event fired on click
 
-// On value selection, the component returns an event "update-params" with a load "detail" containing the following datapoints:
+// On value selection, the component returns an event "update-param" with a load "detail" containing the following datapoints:
 // data: the id (or index) of the option selection
 // data-label: the value selected
 // parent: the parent (the target of the event in theory)
@@ -165,6 +165,7 @@ class FigmaSelect extends HTMLElement {
       this.options=[];
       this.icons=[];
       this.componentId='';
+      this.type='';
       this.tooltip = '';
       this.parent='default';
       this.isOpen=false;
@@ -176,6 +177,15 @@ class FigmaSelect extends HTMLElement {
       this.shadowDropdown = shadowRoot.querySelector("#dropdown");
 
   }
+
+  set _value(val){
+    // If we are here, we know that the type is ok
+    this.setValue(val);
+  }
+
+  get _value(){
+    return this.value;
+  }  
 
     setId(val) {
       this.componentId = val;
@@ -199,27 +209,39 @@ class FigmaSelect extends HTMLElement {
         this.parent=val;
       }
 
-    setValue(index, val) {
+    setValue(val) {
 
-      if (this.value != val) {
-
-        this.value=val;
-
-        // We remove the check in front of all the options
-        let options = this.shadowRoot.querySelectorAll('.option');
-        for (let i=0; i<options.length; i++) {
-          options[i].classList.remove('selected'); 
-        }
-        // We add the check in front of the right option
-        this.shadowRoot.querySelector("#option"+index).classList.add('selected');
-        // Then we change the icon inside the main component and set the label
-        this.shadowRoot.querySelector('#select-label').innerHTML = val;
-        this.shadowRoot.querySelector("#select-icon").setAttribute('type', this.icons[index])
-  
-        // Finally we send an event to register the value selected in the main component
-          this.register(index);
+      // We only register a change if the value is different
+      if (this.value === val) {
+        return 0;
       }
 
+      let index = this.options.indexOf(val);
+
+      // if it is different, we check if the value is valid, if not we don't do anything
+      if (index < 0) {
+        return 0
+      }
+
+      this.value=val;
+
+      // We remove the check in front of all the options
+      let options = this.shadowRoot.querySelectorAll('.option');
+      for (let i=0; i<options.length; i++) {
+        options[i].classList.remove('selected'); 
+      }
+      // We add the check in front of the right option
+      this.shadowRoot.querySelector("#option"+index).classList.add('selected');
+      // Then we change the icon inside the main component and set the label
+      this.shadowRoot.querySelector('#select-label').innerHTML = val;
+      this.shadowRoot.querySelector("#select-icon").setAttribute('type', this.icons[index])
+
+    }
+
+    updateValue(value){
+      this.setValue(value);
+      // Finally we send an event to register the change selected in the main component
+      this.register(value);
     }
 
     setSize(size){
@@ -244,15 +266,11 @@ class FigmaSelect extends HTMLElement {
             }
             // Then we set the current value to the first value
             // We check first if there is a default option
-            if (this.defaultValue){
-              let index = this.options.findIndex((el) => el===this.defaultValue);
-              if(index>=0){
-                this.setValue(index, this.options[index]); 
-              }
-            }
-            else {
-              this.setValue(0, this.options[0]); 
-            }
+            // We add the check in front of the right option
+            this.shadowRoot.querySelector("#option"+0).classList.add('selected');
+            // Then we change the icon inside the main component and set the label
+            this.shadowRoot.querySelector('#select-label').innerHTML = opts[0];
+            this.shadowRoot.querySelector("#select-icon").setAttribute('type', this.icons[0])
         }
       }
 
@@ -296,7 +314,7 @@ class FigmaSelect extends HTMLElement {
 
     optionUp(e, index, value, id) {
         e.stopPropagation();
-        this.setValue(index, value, id);
+        this.updateValue(value, id);
         this.closeDropdown();
     }
 
@@ -312,8 +330,8 @@ class FigmaSelect extends HTMLElement {
 
     register(val){
         this.val=val;
-        this.shadowRoot.dispatchEvent(new CustomEvent("update-params", {
-            detail: { data: val, "data-label":this.options[val], parent: this.parent, param:this.id  },
+        this.shadowRoot.dispatchEvent(new CustomEvent("update-param", {
+            detail: { "data-index": val, data:val, target: this.parent, param:this.type},
             composed: true,
             bubbles: true
         }));
@@ -322,18 +340,6 @@ class FigmaSelect extends HTMLElement {
     attributeChangedCallback(name, oldValue, newValue) {
         if(name==='parent') {this.setParent(newValue);}
         if(name==='id') {this.setId(newValue);}
-        if(name==='default-value') {
-          if (this.options.length>0){
-            let index = this.options.findIndex((el) => el===newValue);
-            if(index>=0){
-              this.setValue(index, this.options[index]); 
-            }          
-            else {
-              this.setValue(0, this.options[0]); 
-            }
-          }
-
-        }
      }
 
      connectedCallback(){ // Called when inserted into DOM
@@ -343,11 +349,9 @@ class FigmaSelect extends HTMLElement {
       document.addEventListener("mouseup", (e) => this.closeOrNot(e, this.componentId)) ;
       this.initIcons(this.getAttribute('values-icons'));  
       this.setTooltip(this.getAttribute('tooltip'));
-      this.parameter=this.getAttribute('parameter');
-      this.index=this.getAttribute('index');
       this.setSize(this.getAttribute('size'));
       this.defaultValue=this.getAttribute('default-value');
-      this.type=this.getAttribute('type');
+      this.type=this.getAttribute('role');
   }
 
 

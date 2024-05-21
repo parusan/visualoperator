@@ -81,15 +81,14 @@ template.innerHTML = /* html */ `
 `; 
 
 class OriginInput extends HTMLElement {
-  static get observedAttributes() {return ['parent', 'angle']; }
+  static get observedAttributes() {return ['parent']; }
   
     constructor() {
       super();
       this.componentId='';
       this.parent='default';
       this.type='default';
-      this.parameter='default';
-      this.index=0;
+
       this.height = 0;
       this.width = 0;
       this.zoom = 2;
@@ -150,34 +149,66 @@ class OriginInput extends HTMLElement {
       this.zoomEl = shadowRoot.querySelector("#zoom");
 
       // We listen for zoom updates
-      this.addEventListener("update-zoom", function(e) {
+      this.addEventListener("update-zoom-view", function(e) {
         if (e.detail.parent===(this.parent+'-'+this.componentId)) 
         { 
           this.setZoom(e.detail.zoom);
         }
         });
 
+      // We listen for zoom updates that trigger sending the data
+      this.addEventListener("update-zoom", function(e) {
+        if (e.detail.parent===(this.parent+'-'+this.componentId)) 
+        { 
+          this.setZoom(e.detail.zoom);
+          this.register();
+        }
+        });
+
         // Here we listen to updates for the shape of the ghost, eg the selection of Node in figma
 
-        document.addEventListener("update-ghost", e => {
-          if (e.detail.svg) 
-          { 
-            this.setGhost(e.detail.svg);
-          }
-          });
-          document.addEventListener("empty-ghost", e => {
-              this.emptyGhost();
-            });
+      document.addEventListener("update-ghost", e => {
+        if (e.detail.svg) 
+        { 
+          this.setGhost(e.detail.svg);
+        }
+        });
+        document.addEventListener("empty-ghost", e => {
+            this.emptyGhost();
+        });
 
   }
+
+  set _angle(angle){
+    this.setAngle(angle);
+  }
+
+  get _angle() {
+    return this.angle;
+  }
+
+  set _origin(origin){
+    this.control.x=origin.x;
+    this.control.y=origin.y;
+    this.initZoom(origin.zoom);
+    this.updateControl();
+  }
+
+  get _origin() {
+    let origin= {
+      'x': this.origin.x,
+      'y': this.origin.y,
+      'zoom': this.zoom
+    }
+    return origin;
+  }
+
 
   connectedCallback(){ // Called when inserted into DOM
     // Initialization of the attributes
     this.setDimensions(this.getAttribute('size'));
     this.componentId=this.getAttribute('id');
-    this.type=this.getAttribute('type');
-    this.parameter=this.getAttribute('parameter');
-    this.index=this.getAttribute('index'); 
+    this.type=this.getAttribute('role');
 
     // We try to request the ghost of the SVG
     this.getGhost();
@@ -248,6 +279,16 @@ class OriginInput extends HTMLElement {
       this.anchorsElements[i].setAttribute('style', `width: ${radius}; height: ${radius}; left: ${ctrlX};top: ${ctrlY}`)
     }
 
+    this.initControl();
+
+    // listen for mouse events
+    this.dragArea.onmousedown = (e) => this.myDown(e, this.control) ;
+    document.onmouseup = (e) => this.myUp(e, this.control) ;
+    document.onmousemove = (e) => this.myMove(e, this.control) ;
+    // this.dragArea.onmouseleave = (e) => this.myMoveOut(e, this.control) ;
+}
+
+ initControl() {
     // Then we initialize the control
     const optionTemplate = document.createElement('template');
     optionTemplate.innerHTML = `<div class="control draggable" id="control"></div>`;
@@ -260,13 +301,18 @@ class OriginInput extends HTMLElement {
     this.controlElement.setAttribute('style', `width: ${radius}; height: ${radius}; left: ${ctrlX};top: ${ctrlY}`)    
 
     this.draw();
+ }
 
-    // listen for mouse events
-    this.dragArea.onmousedown = (e) => this.myDown(e, this.control) ;
-    document.onmouseup = (e) => this.myUp(e, this.control) ;
-    document.onmousemove = (e) => this.myMove(e, this.control) ;
-    // this.dragArea.onmouseleave = (e) => this.myMoveOut(e, this.control) ;
-}
+ updateControl(){
+      // And then we update its coordinates
+      let ctrlX = this.control.x*this.width-this.control.r;
+      let ctrlY = this.control.y*this.height-this.control.r;
+      let radius = this.control.r*2;
+      this.controlElement.setAttribute('style', `width: ${radius}; height: ${radius}; left: ${ctrlX};top: ${ctrlY}`)    
+  
+      this.draw();
+      this.drawGhost();
+ }
 
 attributeChangedCallback(name, oldValue, newValue) {
   if(name==='parent') { this.setParent(newValue);}
@@ -304,11 +350,15 @@ attributeChangedCallback(name, oldValue, newValue) {
     this.objectBg.innerHTML = '';
   }
 
-  setZoom(zoom ){
+initZoom(zoom){
+  this.setZoom(zoom);
+  this.zoomEl._zoom=zoom;
+}
+
+  setZoom(zoom){
     this.zoom=zoom;
     this.drawAnchors();
     this.drawGhost();
-    this.register(this.control);
   }
 
   setAngle(angle){
@@ -319,8 +369,6 @@ attributeChangedCallback(name, oldValue, newValue) {
   setParent(val) {
     // We initialize the selection value the first time we set the parent of the component
     this.parent=val;
-    // We register the component a first time in the whole plugin
-    this.register(this.control); 
     this.zoomEl.setAttribute('parent', val+'-'+this.componentId);
   }
 
@@ -381,14 +429,15 @@ attributeChangedCallback(name, oldValue, newValue) {
        this.dragArea.setAttribute('style', `height: ${val}px; width: ${val}px;`)
     }
 
-    register(control){
+    register(){
       let newOrigin ={
-        x: control.x,
-        y: control.y,
+        x: this.control.x,
+        y: this.control.y,
         zoom: this.zoom
       }
-      this.shadowRoot.dispatchEvent(new CustomEvent("update-params", {
-      detail: { data: newOrigin, "data-label":'origin-controls', parent: this.parent, param:this.componentId  },
+      console.log('registering')
+      this.shadowRoot.dispatchEvent(new CustomEvent("update-param", {
+      detail: { data: newOrigin, "data-label":'origin-controls', target: this.parent, param:this.componentId  },
       composed: true,
       bubbles: true
       }));
@@ -444,7 +493,6 @@ attributeChangedCallback(name, oldValue, newValue) {
   myUp(e, control) {
     // tell the browser we're handling this mouse event
     if (this.control.isDragging) {
-      console.log('up')
       e.preventDefault();
       e.stopPropagation();
 
@@ -452,7 +500,7 @@ attributeChangedCallback(name, oldValue, newValue) {
       this.dragok = false;
       control.isDragging = false;
       this.removeDragging();
-      this.register(control);
+      this.register();
     }
   }
 
@@ -463,7 +511,7 @@ attributeChangedCallback(name, oldValue, newValue) {
     e.stopPropagation();
 
     // clear all the dragging flags
-    if (this.dragok) this.register(control);
+    if (this.dragok) this.register();
     this.dragok = false;
     control.isDragging = false;
     this.removeDragging();

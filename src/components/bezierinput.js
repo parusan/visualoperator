@@ -43,8 +43,6 @@ class BezierInput extends HTMLElement {
       this.componentId='';
       this.parent='default'
       this.type='default';
-      this.parameter='default';
-      this.index=0;
       this.height = 0;
       this.width = 0;
       // drag related variables
@@ -54,7 +52,7 @@ class BezierInput extends HTMLElement {
 
       // Define the points as {x, y}
       // Also default controls // 
-      this.defaultControls = {
+      this.controlsValue = {
         'start': {'x':0, 'y': 1},
         'cp1': {'x':0.25, 'y': 0.75},
         'cp2': {'x':0.75, 'y': 0.25},
@@ -74,14 +72,25 @@ class BezierInput extends HTMLElement {
       this.dragArea = shadowRoot.querySelector("#dragarea");
   }
 
+  set _controlsValue(controls){
+    if (controls.start.x>=0 && controls.start.y>=0 && controls.cp1.x>=0 && controls.cp1.y>=0 && controls.cp2.x>=0 && controls.cp2.y>=0 && controls.end.x>=0 && controls.end.y>=0) {
+      this.updateControls(controls);
+    }
+    else {
+      console.log("wrong values for new controls")
+    }
+  }
+
+  get _controlsValue(){
+    return this.controls;
+  }  
+
   connectedCallback(){ // Called when inserted into DOM
     // Initialization of the attributes
     this.setHeight(this.getAttribute('height'));
     this.setWidth(this.getAttribute('width'));
     this.componentId=this.getAttribute('id');
-    this.type=this.getAttribute('type');
-    this.parameter=this.getAttribute('parameter');
-    this.index=this.getAttribute('index'); 
+    this.type=this.getAttribute('role');
 
     // We initialize the DOM with the controls
     for (let i=0; i<this.controls.length; i++) {
@@ -113,12 +122,31 @@ attributeChangedCallback(name, oldValue, newValue) {
   if(name==='parent') { this.setParent(newValue);}
 }
 
+  updateControls (controls){
+    this.controlsValue = {...controls};
+    this.controls[0].x=controls.start.x;
+    this.controls[0].y=controls.start.y;
+    this.controls[1].x=controls.cp1.x;
+    this.controls[1].y=controls.cp1.y;
+    this.controls[2].x=controls.cp2.x;
+    this.controls[2].y=controls.cp2.y;
+    this.controls[3].x=controls.end.x;
+    this.controls[3].y=controls.end.y;
+
+    // We update the controls in the DOM
+    for (let i=0; i<this.controls.length; i++) {
+      let ctrlX = this.controls[i].x*this.width-this.controls[i].r;
+      let ctrlY = this.controls[i].y*this.height-this.controls[i].r;
+      let radius = this.controls[i].r*2;
+      this.controlsElements[i].setAttribute('style', `width: ${radius}; height: ${radius}; left: ${ctrlX};top: ${ctrlY}`)    
+    }
+    
+    this.draw();
+  }
 
   setParent(val) {
     // We initialize the selection value the first time we set the parent of the component
       this.parent=val;
-        // We register the component a first time in the whole plugin
-        this.register(this.controls); 
   }
 
     // clear the canvas
@@ -170,8 +198,26 @@ attributeChangedCallback(name, oldValue, newValue) {
 
 
     register(controls){
-      this.shadowRoot.dispatchEvent(new CustomEvent("update-params", {
-      detail: { data: controls, "data-label":'bezier-controls', parent: this.parent, param:this.componentId  },
+      let newControls = {
+        'start': {
+          'x': this.controls[0].x,
+          'y': this.controls[0].y
+        },
+        'cp1': {
+          'x': this.controls[1].x,
+          'y': this.controls[1].y
+        },
+        'cp2': {
+          'x': this.controls[2].x,
+          'y': this.controls[2].y
+        },
+        'end': {
+          'x': this.controls[3].x,
+          'y': this.controls[3].y
+        }
+      }
+      this.shadowRoot.dispatchEvent(new CustomEvent("update-param", {
+      detail: { data: newControls, "data-label":'bezier-controls', target: this.parent, param:this.type  },
       composed: true,
       bubbles: true
   }));

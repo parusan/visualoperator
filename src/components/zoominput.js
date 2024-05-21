@@ -55,6 +55,7 @@ class ZoomInput extends HTMLElement {
       this.height = 0;
       this.width = 8;
       this.zoom = 2;
+      this.minZoom = 1;
       this.maxZoom = 6;
       // drag related variables
       this.dragok = false;
@@ -77,7 +78,6 @@ class ZoomInput extends HTMLElement {
     // Initialization of the attributes
     this.setDimensions(this.getAttribute('height'));
     this.componentId=this.getAttribute('id');
-    this.initZoom(this.getAttribute('default'));
 
 
     // Then we initialize the control
@@ -99,6 +99,14 @@ class ZoomInput extends HTMLElement {
     // this.shadowRoot.querySelector("#container").onmouseleave = (e) => this.myMoveOut(e, this.control) ;
 } 
 
+set _zoom(zoom) {
+  this.initZoom(zoom);
+}
+
+get _zoom() {
+  return this.zoom;
+}
+
 attributeChangedCallback(name, oldValue, newValue) {
   if(name==='parent') { this.setParent(newValue);}
 }
@@ -106,8 +114,6 @@ attributeChangedCallback(name, oldValue, newValue) {
   setParent(val) {
     // We initialize the selection value the first time we set the parent of the component
     this.parent=val;
-    // We register the component a first time in the whole plugin
-    this.register(this.control); 
   }
 
       // redraw the scene
@@ -122,6 +128,13 @@ attributeChangedCallback(name, oldValue, newValue) {
        this.dragArea.setAttribute('style', `height: ${val}px;`)
     }
 
+    updateView(control){
+      this.shadowRoot.dispatchEvent(new CustomEvent("update-zoom-view", {
+      detail: { zoom: 1+(this.control.y*(this.maxZoom-1)), parent:this.parent  },
+      composed: true,
+      bubbles: true
+      }));
+    }
     register(control){
       this.shadowRoot.dispatchEvent(new CustomEvent("update-zoom", {
       detail: { zoom: 1+(this.control.y*(this.maxZoom-1)), parent:this.parent  },
@@ -132,7 +145,10 @@ attributeChangedCallback(name, oldValue, newValue) {
 
     initZoom(zoom){
       this.zoom= parseInt(zoom,10);
+      if (this.zoom<1) this.zoom=1;
+      if (this.zoom>this.maxZoom) this.maxZoom=this.zoom;
       this.control.y=this.zoom/this.maxZoom;
+      this.draw();
     }
 
 
@@ -207,7 +223,6 @@ attributeChangedCallback(name, oldValue, newValue) {
           e.preventDefault();
           e.stopPropagation();
     // if we're dragging anything...
-    console.log('moving')
     if (this.dragok) {
 
       // get the current mouse position
@@ -229,7 +244,7 @@ attributeChangedCallback(name, oldValue, newValue) {
             if (s.y < 0) s.y=0;
         }
       // redraw the scene with the new rect positions
-      this.register(s);
+      this.updateView(s);
       this.draw();
 
       // reset the starting mouse position for the next mousemove

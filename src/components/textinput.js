@@ -116,7 +116,7 @@ input[type=number] {
 `; 
 
 class TextInput extends HTMLElement {
-  static get observedAttributes() {return ['parent', 'default-value']; }
+  static get observedAttributes() {return ['parent']; }
     constructor() {
       super();
       this.componentId='';
@@ -130,10 +130,18 @@ class TextInput extends HTMLElement {
 
   }
 
+  set _val(val){
+    // If we are here, we know that the type is ok
+    this.setValue(val);
+  }
+
+  get _val(){
+    return this.val;
+  }
+
     setValue(val) {
       this.shadowRoot.querySelector('#value-input').value = val;
       this.val=val;
-      this.register(this.val); 
     }
     setTooltip(val) {
       this.tooltip=val;
@@ -148,8 +156,6 @@ class TextInput extends HTMLElement {
     setParent(val) {
       // We initialize the selection value the first time we set the parent of the component
         this.parent=val;
-          // We register the component a first time in the whole plugin
-          this.register(this.val); 
     }
     setSize(size){
       if(size){
@@ -162,17 +168,17 @@ class TextInput extends HTMLElement {
 
     register(val){
       // First we need to check the value and do some clean up
-      if (val<1){
-        this.setValue(1);
-        return;
+      if (val<0){
+        this.setValue(0);
+        val=0;
       }
       if (!Number.isInteger(val)) {
         this.setValue(Math.floor(val));
-        return;       
+        val=Math.floor(val);
       }
       this.val=val; 
-      this.shadowRoot.dispatchEvent(new CustomEvent("update-params", {
-        detail: { data: val, "data-label":'', parent: this.parent, param:this.id},
+      this.shadowRoot.dispatchEvent(new CustomEvent("update-param", {
+        detail: { data: val, "data-label":'', target: this.parent, param:this.id},
         composed: true,
         bubbles: true
     }));
@@ -187,12 +193,10 @@ class TextInput extends HTMLElement {
       this.setTooltip(this.getAttribute('tooltip'));
       this.setIcon(this.getAttribute('icon'));
       this.setUnit(this.getAttribute('unit'));
-      this.setValue(this.getAttribute('default-value'));
       this.setSize(this.getAttribute('size'));      
   }
   attributeChangedCallback(name, oldValue, newValue) {
     if(name==='parent') { this.setParent(newValue);}
-    if(name==='default-value') { this.setValue(newValue);}
  }
 
 

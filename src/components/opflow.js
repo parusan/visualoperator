@@ -49,33 +49,11 @@ class OpFlow extends HTMLElement {
       const shadowRoot = this.attachShadow({ mode: "open" });
       shadowRoot.appendChild(template.content.cloneNode(true));
 
-  //     this.addEventListener("update-params", function(e) {
-  //       // When we receive a request to update the params
-  //       // If it is inside this component, we update them, and then send all the params at once to the plugin
-  //       if (e.detail.parent===this.componentId) 
-  //       { 
-  //           this.params[e.detail.param]= {
-  //             value: e.detail.data,
-  //             label: e.detail['data-label']
-  //           } 
-  //           this.register();
-  //           // If we are changing the mode, we have to update the view
-  //           if (e.detail.param==="mode") {
-  //             this.switchMode(e.detail)
-  //           }
-  //           // If the param is angle, we also send that to update the view in the origin selector
-  //           if (e.detail.param==='angle') {
-  //             this.shadowRoot.querySelector('#origin').setAttribute('angle', e.detail.data )
-  //           }
-  //       }
-  //       });
-
         // We listen for events from buttons
         this.addEventListener("trigger", function(e) { 
           if (e.detail.parent===this.componentId && e.detail.action==="add-op") {
             this.addOperation();    
           }
-          console.log(e.detail.action);
           if (e.detail.parent===this.componentId && e.detail.action.includes("del-op")){
             if(e.detail.action.split("|").length===2) {
               this.removeOperation(e.detail.action.split("|")[1]);
@@ -83,18 +61,21 @@ class OpFlow extends HTMLElement {
           }
         });
 
-        // We listen to changes of the settings of the flow
-        this.addEventListener("update-params", function(e) {
-          // When we receive a request to update the params
-          // If it is inside this component, we update them, and then send all the params at once to the plugin
-          if (e.detail.parent===this.componentId) 
-          { 
-              if (e.detail.param==='repeat') {
-                this.repeat=e.detail.data;
-                this.register();
-              }
+        // We listen to changes of the change to the parameters of the operations in the flow
+        this.addEventListener("update-flow", function(e) {
+          // When we receive a request to update the type
+          // If we find the operation in the flow, we update it
+          let index = this.ops.findIndex(x => x.id === e.detail.id);
+          if (index>=0) this.updateFlowParams(index, e.detail.data, e.detail.type);
+        });
+
+        // We listen to changes of the number of repeat coming directly from the text input
+        this.addEventListener("update-param", function(e) {
+          if (e.detail.param==='repeat' && e.detail.target===this.componentId)
+          {
+            this.updateRepeat(e.detail.data);
           }
-  
+
         });
     }
 
@@ -102,7 +83,6 @@ class OpFlow extends HTMLElement {
         // if this is not empty, we now go through the list and create all the necessary components
         if (Array.isArray(newops) && newops.length>0) {
           this.ops=[];
-          console.log(this.ops);
           for (let i=0; i<newops.length; i++){
             let op = newops[i];
             // First we check if the type is a correct type or we don't add it
@@ -122,6 +102,28 @@ class OpFlow extends HTMLElement {
       return this.ops;
     }
 
+    set _repeat(repeat){
+      this.initRepeat(repeat);
+    }
+
+    get _repeat() {
+      return this.repeat;
+    }
+
+    updateFlowParams(index, params, type){
+      this.ops[index].params={...params};
+      this.ops[index].type=type;
+      this.register();
+    }
+
+    register(){
+      this.shadowRoot.dispatchEvent(new CustomEvent("update-settings", {
+        detail: { data: this.ops, type:'flow', id: this.componentId, target:'root', repeat: this.repeat},
+      composed: true,
+      bubbles: true
+    }));
+    } 
+
     setTitle(title){
       this.name=title;
       this.shadowRoot.querySelector('#title').textContent=title;
@@ -135,14 +137,18 @@ class OpFlow extends HTMLElement {
       this.shadowRoot.querySelector('#repeat').setAttribute('parent', this.componentId);
     }
 
-    setRepeat(val) {
+    initRepeat(val) {
       if (val) {
         this.repeat = val;
-        return;
       }
-      this.repeat=5;
-      this.shadowRoot.querySelector('#repeat').setAttribute('default-value', this.repeat);
+      this.shadowRoot.querySelector('#repeat')._val=this.repeat;
     }
+
+    updateRepeat(repeat){
+      this.repeat=repeat;
+      this.register();
+    }
+
 
     // Generates a new default Transformation. Sets the default parameters
     getOperation() {
@@ -163,10 +169,12 @@ class OpFlow extends HTMLElement {
       console.log(op);
       // Then we add it to the UI
       this.addOpToView(op);
+      // And we update the data at the plugin level
+      this.register();
     }
 
     addOpToView(op){
-      console.log('adding to view ' + JSON.stringify(op))
+      // console.log('adding to view ' + JSON.stringify(op))
       const opTemplate = document.createElement('template');
       opTemplate.innerHTML = `<op-details class="tf" id="${op.id}" flow="${op.flow}"></op-details>`;
       this.shadowRoot.getElementById('ops-container').append(...opTemplate.content.children);
@@ -193,6 +201,8 @@ class OpFlow extends HTMLElement {
       if (index>=0) {
         this.ops.splice(index, 1);
         this.shadowRoot.getElementById(id).remove();
+        // Once deleted, we let the plugin know
+        this.register();
       }
       else {
         console.log('Element not found');
@@ -200,19 +210,9 @@ class OpFlow extends HTMLElement {
    }
 
 
-
-    register(){
-      this.shadowRoot.dispatchEvent(new CustomEvent("update-flow", {
-        detail: { data: this.params, repeat:this.repeat, id: this.componentId},
-      composed: true,
-      bubbles: true
-    }));
-    } 
-
     connectedCallback(){ // Called when inserted into DOM
       // Initialization of the attributes
       this.setId(this.getAttribute('id'));
-      this.setRepeat(this.getAttribute('repeat'));
       this.setTitle(this.getAttribute('name'));
   }
 

@@ -62,7 +62,7 @@ let defaultsettings={
           "offset-y":0,
           "bezier-controls-x":{
               'start': {'x':0, 'y': 1},
-              'cp1': {'x':0.25, 'y': 0.75},
+              'cp1': {'x':0.1, 'y': 0.5},
               'cp2': {'x':0.75, 'y': 0.25},
               'end': {'x':1, 'y': 0}
           },
@@ -73,6 +73,25 @@ let defaultsettings={
               'end': {'x':1, 'y': 0}
           },
           },
+      },
+      {
+        id: 'Flow-12-2',
+        type: 'Rotation',
+        params: {
+          "angle-mode":"Bezier", // Bezier or Fixed
+          "angle":20,
+          "bezier-controls-angle":{
+              'start': {'x':0, 'y': 1},
+              'cp1': {'x':0.12, 'y': 0.56},
+              'cp2': {'x':0.45, 'y': 0.45},
+              'end': {'x':1, 'y': 0}
+          },
+          "origin": {
+              zoom: 3,
+              x: 1,
+              y:0
+          }
+        },
       }],
       repeat: 8,
     }
@@ -85,13 +104,6 @@ let defaultsettings={
   initData(defaultsettings);
 })();
 
-
-// We listen to all the events from the UI Components (not the UI of the plugin) that send their data to register the parameters
-// Parameters are registered at initialization, and at any change
-document.addEventListener("update-controls", function(event) {
-    parameters[event.detail.id]=event.detail.data;
-    console.log(parameters);
-});
 
 
 // Actions coming from buttons in the view
@@ -107,44 +119,34 @@ document.addEventListener("trigger", function(event) {
   }
 });
 
-// We listen to updates to the parameters of the flow
-document.addEventListener("update-flow", function(event) {
-  let index=settings.flows.findIndex( flow => flow.id === event.detail.id);
+
+// We listen to all the events from the UI Components (not the UI of the plugin) that send their data to register the parameters
+// Parameters are registered at initialization, and at any change
+document.addEventListener("update-settings", function(e) {
+  
+  let index=settings.flows.findIndex( flow => flow.id === e.detail.id);
       // Remove from the dom and from the parameters if we find the element
       if (index>=0) {
-        settings.flows[index].ops=event.detail.data;
-        settings.flows[index].repeat=event.detail.repeat;
+        settings.flows[index].ops=[...e.detail.data];
+        settings.flows[index].repeat=e.detail.repeat;
       }
       else {
         console.log('Flow not found in list')
-      }   
+      } 
 });
 
 // Click on the clone button
 
 document.getElementById('clone').onclick = () => {
-  // First thing we clear the error messages
+  // First thing we clear the error message
   document.getElementById('info').classList.remove('hasInfo');
   // And then go
-  // For now we only handle 1 transformation of each type
-  const nbclones = parseInt(parameters.c0['clones-x'].value,10);
 
-  const gapx = parseInt(parameters.t0['x-base'].value, 10);
-  const gapy = parseInt(parameters.t0['y-base'].value, 10);
-  const spacingMode = parseInt(parameters.t0.mode.value, 10);
-  const spacingOrigin = parseInt(parameters.t0.origin.value, 10);
-
-  const angle = parseInt(parameters.r0['angle'].value, 10); 
-  const rotationMode = parseInt(parameters.r0.mode.value, 10);
-
-  let normalizedControls=parameters.t0['curve-controls'].value;
-  let normalizedControlsR=parameters.r0['curve-controls'].value;
-  let rotationOrigin=parameters.r0['origin'].value
-
+  console.log('copying with parameters',settings);
 
   parent.postMessage(
     { pluginMessage: 
-      { type: 'clone-selection', nbclones, gapx, gapy, normalizedControls, angle, normalizedControlsR,rotationOrigin, spacingMode,rotationMode,spacingOrigin} 
+      { type: 'clone-selection', settings} 
     }, '*'
   );
 }
@@ -214,7 +216,7 @@ function addFlowToView(flow){
 
    customElements.whenDefined("op-flow").then(() => {
        document.getElementById(newflow.id)._ops=newflow.ops;
-      //  console.log('in UI', document.getElementById(newflow.id)._ops); 
+       document.getElementById(newflow.id)._repeat=newflow.repeat;
     });
 }
 

@@ -126,8 +126,6 @@ class IconToggle extends HTMLElement {
     setParent(val) {
         // We initialize the selection value the first time we set the parent of the component
           this.parent=val;
-            // We register the component a first time in the whole plugin
-            this.register(0); 
       }
 
       setValues(val){
@@ -147,7 +145,7 @@ class IconToggle extends HTMLElement {
 
     register(val){
       this.val=val;
-      this.shadowRoot.dispatchEvent(new CustomEvent("update-params", {
+      this.shadowRoot.dispatchEvent(new CustomEvent("update-param", {
         detail: { data: val, "data-label":this.values[val], parent: this.parent, param:this.id},
         composed: true,
         bubbles: true
