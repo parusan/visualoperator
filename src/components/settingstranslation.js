@@ -9,7 +9,7 @@ template.innerHTML = /* html */ `
     padding: 0 8px;
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    gap: 8px;
   }
   .row > * {
     flex:1;
@@ -41,19 +41,21 @@ template.innerHTML = /* html */ `
   }
 
   </style>
-  <div class="section section-spacing spacer-bottom">
+  <div class="section section-spacing">
     <div class="row">
       <div class="label sublabel">Horizontal</div>
     </div>
     <div class="row">
         <figma-select values="Bezier|Fixed" values-icons="curve|fixed-space" id="x-mode" role="x-mode" class='figma-select' tooltip="Type of spacing"></figma-select>
-        <text-input id="offset-x" role="offset-x" tooltip="Horizontal gap" icon="horizontal-arrows" unit="px"> </text-input>
-    </div>
-    <div class="row" id="canvascontainer">
-      <bezier-input id="bezier-controls-x" role="bezier-controls-x" height="100" width="184"></bezier-input>
+   </div>
+    <div class="row">
+    <text-input id="offset-x" role="offset-x" tooltip="Horizontal gap" icon="horizontal-arrows" unit="px"> </text-input>
+</div>
+    <div class="row">
+      <bezier-input id="bezier-controls-x" role="bezier-controls-x" height="100" width="176"></bezier-input>
     </div>
   </div>
-  <div class="section section-spacing spacer-bottom">
+  <div class="section section-spacing">
     <div class="row">
       <div class="label sublabel">Vertical</div>
     </div>
@@ -61,8 +63,8 @@ template.innerHTML = /* html */ `
         <figma-select values="Bezier|Fixed" values-icons="curve|fixed-space" id="y-mode" role="y-mode" class='figma-select' tooltip="Type of spacing">   </figma-select>
         <text-input id="offset-y" role="offset-y"  tooltip="Vertical gap" default-value="0" icon="vertical-arrows" unit="px">  </text-input>
     </div>
-    <div class="row" id="canvascontainer">
-      <bezier-input id="bezier-controls-y" role="bezier-controls-y" height="100" width="184"></bezier-input>
+    <div class="row">
+      <bezier-input id="bezier-controls-y" role="bezier-controls-y" height="100" width="176"></bezier-input>
     </div>
   </div>
 `; 

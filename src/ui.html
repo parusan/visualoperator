@@ -2,6 +2,8 @@
     <div class="header spacer-bottom">
       <div class="label-row">
         <div class="label label-main">Target</div>
+        <icon-button class="small-flex" id="save" action='save' icon="save" tooltip="Save" parent="root"></icon-button>
+        <icon-button class="small-flex" id="load" action='load' icon="load" tooltip="Load" parent="root"></icon-button>
       </div>
       <div class="messages" id="info">
         <div class="message-container">
@@ -117,6 +119,20 @@ document.addEventListener("trigger", function(event) {
       console.log('delete', event.detail.parent)
     deleteFlow(event.detail.parent);
   }
+  if (event.detail.action==="save"){
+    parent.postMessage(
+    { pluginMessage: 
+      { type: 'save', settings}
+    }, '*'
+  );
+    }
+    if (event.detail.action==="load"){
+        parent.postMessage(
+        { pluginMessage: 
+          { type: 'load', settings}
+        }, '*'
+      );
+    }
 });
 
 
@@ -169,6 +185,15 @@ onmessage = (event) => {
       bubbles: true
     }));
   }
+  if(event.data.pluginMessage.type==='load-initialize') {
+    initData(JSON.parse(event.data.pluginMessage.params));
+  }
+  if(event.data.pluginMessage.type==='hide-load') {
+    document.getElementById('load').style.display = 'none';
+  }
+  if(event.data.pluginMessage.type==='show-load') {
+    document.getElementById('load').style.display = 'block';
+  }
 }
 
 function setMessage(mess, type){
@@ -178,6 +203,12 @@ function setMessage(mess, type){
 }
 
 function initData(data){
+  // first we delete all the flows
+  let ref=[...settings.flows]
+  for (let i=0; i<ref.length; i++) {
+    deleteFlow(ref[i].id); // Trying to always remove the first one, not sure it works
+  }
+
   if (data.flows.length>0){
     for (let i=0; i<data.flows.length; i++){
       // We read from the default settings
@@ -347,7 +378,7 @@ function deleteFlow(id){
     padding: 0 8px;
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    gap: 8px;
   }
   .row > * {
     flex:1;
@@ -391,5 +422,6 @@ function deleteFlow(id){
 
 
 </style>
+<link href="./styles/colors.css" rel="stylesheet" />
 <link href="./styles/tooltip.css" rel="stylesheet" />
 <link href="./styles/scrollbar.css" rel="stylesheet" />

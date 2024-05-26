@@ -1,0 +1,26 @@
+
+    :root {
+        --color-accent1: #007be5;
+        --color-accent2: #9747ff;
+        --color-accent3: #ff24bd;
+        --color-accent4: #f24822;
+        --color-accent5: #ffcd29;
+        --color-accent6: #14ae5c;
+        --color-accent7: #667799;
+
+        /* Secondaries */
+        --color-accent8: #0768cf;
+        --color-accent9: #8638e5;
+        --color-accent10: #ea10ac;
+        --color-accent11: #dc3412;
+        --color-accent12: #ffc21a;
+        --color-accent13: #009951;
+        --color-accent14: #536383;
+        --color-accent15: #034ac1;
+        --color-accent16: #681abb;
+        --color-accent17: #971172;
+        --color-accent18: #9f1f18;
+        --color-accent19: #eba611;
+        --color-accent20: #036838;
+        --color-accent21: #394360;
+    }

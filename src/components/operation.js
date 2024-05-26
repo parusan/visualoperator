@@ -44,7 +44,7 @@ template.innerHTML = /* html */ `
     border: 1px solid var(--figma-color-border);
     border-radius: 4px;
     z-index: 2;
-    padding: 4px 0;
+    padding: 0;
     box-shadow: var(--elevation-500-modal-window, 0px 2px 14px rgba(0, 0, 0, .15), 0px 0px 0px .5px rgba(0, 0, 0, .2));
     visibility: hidden;
     transition: left ease-out 80ms;
@@ -203,6 +203,7 @@ class Operation extends HTMLElement {
     setType(type){
       this.type=type;
       this.initView(type);
+      this.setTitle();
     }
 
     // We initiatlize 
@@ -210,12 +211,12 @@ class Operation extends HTMLElement {
       this.type=type;
       if (type==='Translation') {
         this.updateParams(refs.translationDefault);
-
       }
       if (type==='Rotation') {
         this.updateParams(refs.rotationDefault);
       }
       this.initView(type);
+      this.setTitle();
     }
 
     updateParams(params){
@@ -268,6 +269,10 @@ class Operation extends HTMLElement {
        });  
       }
       this.updateOverview();
+    }
+
+    setTitle(){
+      this.shadowRoot.querySelector('#title').innerHTML = this.type + ' settings';
     }
     
     // sets a quick overview of the operation

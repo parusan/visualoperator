@@ -4,7 +4,7 @@ const template = document.createElement("template");
 template.innerHTML = /* html */ `
   <style>
   .beziercanvas {
-    background: var(--figma-color-bg-secondary);
+    background: transparent;
     border-radius: 4px;
   }
   :host {
@@ -13,18 +13,19 @@ template.innerHTML = /* html */ `
   }
   #dragarea {
     position: relative;
-    overflow: hidden;
+    cursor: 'dragging';
+    // overflow: hidden;
   }
   .control {
     position: absolute;
     border-radius: 50%;
     background: #FFF;
-    cursor: grab;
+    pointer-events: none;
   }
   .control.draggable {
-    background: var(--figma-color-bg-brand);
-    box-shadow: var(--elevation-500-modal-window, 0px 2px 14px rgba(0, 0, 0, .15), 0px 0px 0px .5px rgba(0, 0, 0, .2));
-
+    cursor: grab;
+    background: var(--color-accent1);
+    box-shadow: var(--elevation-500-modal-window, 0px 2px 14px rgba(0, 123, 229, .3), 0px 0px 0px .5px rgba(0, 0, 0, .2));
   }
   .control.dragging:hover {
     cursor: grabbing !important;
@@ -50,6 +51,21 @@ class BezierInput extends HTMLElement {
       this.startX=0;
       this.startY=0;
 
+      // Colors
+
+      this.styles = getComputedStyle(document.documentElement)
+
+      let handlesColor = ""; // The dots that can be moved
+      let handlesBorderColor = ""; // The border of the dots that can be moved
+      let handleLinesColors = ""; // The color of the lines drawn as tangents to the Bezier. They move with the handles
+      let controlsColor = ""; // The color of the origins that can not be moved
+      let bezierColor = ""; // The color of the Bezier curve
+      let bgColor = ""; // the background
+      let bgBorderColor = ""; // the border around the background
+      let baselineColor = ""; // The diagonal across the component
+
+      // !!! Some style declarations are left in the CSS ... because easier
+
       // Define the points as {x, y}
       // Also default controls // 
       this.controlsValue = {
@@ -57,10 +73,10 @@ class BezierInput extends HTMLElement {
         'cp1': {'x':0.25, 'y': 0.75},
         'cp2': {'x':0.75, 'y': 0.25},
         'end': {'x':1, 'y': 0} }
-      this.start = { x: 0, y: 1, r: 5, fill: "#FFF", isDragging: false, restricted: true };
-      this.cp1 = { x: 0.25, y: 0.75, r: 5, fill: "#0c8ce9", isDragging: false, restricted: false };
-      this.cp2 = { x: 0.75, y: 0.25, r: 5, fill: "#0c8ce9", isDragging: false, restricted: false };
-      this.end = { x: 1, y: 0, r: 5, fill: "#FFF", isDragging: false, restricted: true};
+      this.start = { x: 0, y: 1, r: 5, isDragging: false, restricted: true };
+      this.cp1 = { x: 0.25, y: 0.75, r: 5, isDragging: false, restricted: false };
+      this.cp2 = { x: 0.75, y: 0.25, r: 5, isDragging: false, restricted: false };
+      this.end = { x: 1, y: 0, r: 5, isDragging: false, restricted: true};
 
       this.controls = [this.start, this.cp1, this.cp2, this.end];
       this.controlsElements =[];
@@ -70,6 +86,7 @@ class BezierInput extends HTMLElement {
       this.shadowCanvas = shadowRoot.querySelector("#innercanvas");
       this.ctx = this.shadowCanvas.getContext("2d");
       this.dragArea = shadowRoot.querySelector("#dragarea");
+      this.root=shadowRoot.getRootNode().host;
   }
 
   set _controlsValue(controls){
@@ -99,7 +116,7 @@ class BezierInput extends HTMLElement {
       // if the element doesn't exist yet, we add it
       const optionTemplate = document.createElement('template');
       let isDraggable = this.controls[i].restricted ? '' : 'draggable';
-      optionTemplate.innerHTML = `<div class="control ${isDraggable}" id="${thisId}"></div>`;
+      optionTemplate.innerHTML = `<div class="control ${isDraggable}" id="${thisId}" style="background: ${this.handlesColor}"><div class='control-content'></div></div>`;
       this.dragArea.append(...optionTemplate.content.children);
       this.controlsElements.push(this.shadowRoot.querySelector('#'+thisId));
       // And then we update its coordinates
@@ -112,10 +129,10 @@ class BezierInput extends HTMLElement {
     this.draw();
 
     // listen for mouse events
-    this.dragArea.onmousedown = (e) => this.myDown(e, this.controls) ;
-    this.dragArea.onmouseup = (e) => this.myUp(e, this.controls) ;
-    this.dragArea.onmousemove = (e) => this.myMove(e, this.controls) ;
-    this.dragArea.onmouseleave = (e) => this.myMoveOut(e, this.controls) ;
+    this.root.onmousedown = (e) => this.myDown(e, this.controls) ;
+    this.shadowCanvas.onmouseup = (e) => this.myUp(e, this.controls) ;
+    this.shadowCanvas.onmousemove = (e) => this.myMove(e, this.controls) ;
+    this.shadowCanvas.onmouseout = (e) => this.myMoveOut(e, this.controls) ;
 }
 
 attributeChangedCallback(name, oldValue, newValue) {
@@ -157,22 +174,24 @@ attributeChangedCallback(name, oldValue, newValue) {
       this.clear();
       // diagonal
       this.ctx.lineWidth = 1;
-      this.ctx.strokeStyle = "#0000004d";
+      this.ctx.strokeStyle = this.styles.getPropertyValue('--color-accent7');
+      this.ctx.setLineDash([8, 8]);
       this.ctx.beginPath();  
       this.ctx.moveTo(this.start.x*this.width, this.start.y*this.height);
       this.ctx.lineTo(this.end.x*this.width, this.end.y*this.height);
       this.ctx.stroke();
       // Line from start to CP1
-      this.ctx.strokeStyle = "#ffffffb2";
+      this.ctx.setLineDash([]);
+      this.ctx.strokeStyle = this.styles.getPropertyValue('--color-accent1');
       this.ctx.beginPath();  this.ctx.moveTo(this.start.x*this.width, this.start.y*this.height);
       this.ctx.lineTo(this.cp1.x*this.width, this.cp1.y*this.height); this.ctx.stroke();
       // Line from end to CP2
-      this.ctx.strokeStyle = "#ffffffb2";
+      this.ctx.strokeStyle = this.styles.getPropertyValue('--color-accent1');;
       this.ctx.beginPath();  this.ctx.moveTo(this.end.x*this.width, this.end.y*this.height);
       this.ctx.lineTo(this.cp2.x*this.width, this.cp2.y*this.height); this.ctx.stroke();
       // Cubic Bézier curve
       this.ctx.lineWidth = 2;
-      this.ctx.strokeStyle = "#b3b3b3";
+      this.ctx.strokeStyle = this.styles.getPropertyValue('--color-accent2');;
       this.ctx.beginPath();  
       this.ctx.moveTo(this.start.x*this.width, this.start.y*this.height);
       this.ctx.bezierCurveTo(this.cp1.x*this.width, this.cp1.y*this.height, this.cp2.x*this.width, this.cp2.y*this.height, this.end.x*this.width, this.end.y*this.height);
@@ -230,6 +249,7 @@ attributeChangedCallback(name, oldValue, newValue) {
     e.preventDefault();
     e.stopPropagation();
 
+
     // get the current mouse position
     const mx = parseInt(e.clientX);
     const my = parseInt(e.clientY);
@@ -240,7 +260,6 @@ attributeChangedCallback(name, oldValue, newValue) {
       // calculate the distance between the mouse click and the objects
       const dx = s.x*this.width + this.shadowCanvas.getBoundingClientRect().x - mx;
       const dy = s.y*this.height + this.shadowCanvas.getBoundingClientRect().y - my;
-
         //  console.log('Mouse: ', e.clientX, e.clientY,'Shape: ', s.x + this.shadowCanvas.getBoundingClientRect().x, s.y+ this.shadowCanvas.getBoundingClientRect().y,'Distance: ', dx, dy);
 
         // test if the mouse is inside this circle
@@ -280,7 +299,7 @@ attributeChangedCallback(name, oldValue, newValue) {
   // handle events when the mouse leaves the canvas
   myMoveOut(e, controls) {
     // tell the browser we're handling this mouse event
-    e.preventDefault();
+     e.preventDefault();
     e.stopPropagation();
 
     // clear all the dragging flags
@@ -297,6 +316,9 @@ attributeChangedCallback(name, oldValue, newValue) {
         // tell the browser we're handling this mouse event
         e.preventDefault();
         e.stopPropagation();
+
+    this.checkMouse(e, controls);
+
     // if we're dragging anything...
     if (this.dragok) {
 
@@ -314,6 +336,7 @@ attributeChangedCallback(name, oldValue, newValue) {
       for (let i = 0; i < controls.length; i++) {
         const s = controls[i];
         if (s.isDragging) {
+          this.dragArea.style.cursor='grabbing';
           if (!s.restricted) {
             s.x += dx/this.width;// If we restricted the movement of the shape we don't apply the changes
             s.y += dy/this.height;
@@ -328,6 +351,28 @@ attributeChangedCallback(name, oldValue, newValue) {
       this.startY = my;
     }
 
+  }
+
+  checkMouse(e, controls) {
+    // get the current mouse position
+    const mx = parseInt(e.clientX);
+    const my = parseInt(e.clientY);
+    this.dragArea.style.cursor='default';
+    // test each shape to see if mouse is inside
+    for (let i = 0; i < controls.length; i++) {
+      var s = controls[i];
+      if (!s.restricted) {
+        // calculate the distance between the mouse click and the objects
+        const dx = s.x*this.width + this.shadowCanvas.getBoundingClientRect().x - mx;
+        const dy = s.y*this.height + this.shadowCanvas.getBoundingClientRect().y - my;
+          //  console.log('Mouse: ', e.clientX, e.clientY,'Shape: ', s.x + this.shadowCanvas.getBoundingClientRect().x, s.y+ this.shadowCanvas.getBoundingClientRect().y,'Distance: ', dx, dy);
+
+          // test if the mouse is inside this circle
+          if (!this.dragok && dx * dx + dy * dy < (s.r*2) * (s.r*2)) {
+            this.dragArea.style.cursor='grab';
+          }
+        }
+    }
   }
 
 

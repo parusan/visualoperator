@@ -34,7 +34,7 @@ template.innerHTML = /* html */ `
     cursor: pointer;
     position: relative;
     width: 100%;
-    min-width: 120px;
+    min-width: 80px;
     box-sizing: border-box;
   }
   .figma-select:hover {

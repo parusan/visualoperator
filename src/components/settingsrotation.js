@@ -8,7 +8,7 @@ template.innerHTML = /* html */ `
     padding: 0 8px;
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    gap: 8px;
   }
   .row > * {
     flex:1;
@@ -52,7 +52,7 @@ template.innerHTML = /* html */ `
       </text-input>
     </div>
     <div class="row">
-      <bezier-input id="bezier-controls-angle" role="bezier-controls-angle" height="100" width="184"></bezier-input>
+      <bezier-input id="bezier-controls-angle" role="bezier-controls-angle" height="100" width="176"></bezier-input>
     </div>
   </div>
   <div class="section section-spacing spacer-bottom">
