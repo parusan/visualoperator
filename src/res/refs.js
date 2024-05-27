@@ -33,6 +33,33 @@ export const rotationDefault = {
     }
 }
 
+export const scaleDefault = {
+    "scale-mode":"Bezier", // Bezier or Fixed
+    "scale":120, // percents
+    "bezier-controls-scale":{
+        'start': {'x':0, 'y': 1},
+        'cp1': {'x':0.12, 'y': 0.56},
+        'cp2': {'x':0.45, 'y': 0.45},
+        'end': {'x':1, 'y': 0}
+    },
+    "origin": {
+        zoom: 1,
+        x: 0.5,
+        y:1
+    }
+  }
+
+  export const opacityDefault = {
+    "opacity-mode":"Bezier", // Bezier or Fixed
+    "opacity":200, // percents
+    "bezier-controls-opacity":{
+        'start': {'x':0, 'y': 1},
+        'cp1': {'x':0.12, 'y': 0.56},
+        'cp2': {'x':0.45, 'y': 0.45},
+        'end': {'x':1, 'y': 0}
+    }
+  }
+
 export const flowDefault = {
     id: '',
     name: '',
@@ -40,4 +67,4 @@ export const flowDefault = {
     repeat:5
   };
 
-export const types=['Translation', 'Rotation'];
+export const types=['Translation', 'Rotation', 'Scale', 'Opacity'];

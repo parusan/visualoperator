@@ -100,7 +100,7 @@ template.innerHTML = /* html */ `
   <div class="operation-container">
     <div class="operation-preview">
       <icon-button class="small-flex" id="open" action="open-settings" icon="translation" tooltip="Open settings"></icon-button>
-      <figma-select values="Translation|Rotation" default-value="Translation" id="type" role="type" class='figma-select' size="S" tooltip="Select type of transformation">
+      <figma-select values="Translation|Rotation|Scale|Opacity" default-value="Translation" id="type" role="type" class='figma-select' size="S" tooltip="Select type of transformation">
       </figma-select>
       <div class="label" id="overview">Bézier</div>
       <icon-button class="small-flex" id="del" action="del" icon="remove" tooltip="Remove operation"></icon-button>
@@ -215,6 +215,12 @@ class Operation extends HTMLElement {
       if (type==='Rotation') {
         this.updateParams(refs.rotationDefault);
       }
+      if (type==='Scale') {
+        this.updateParams(refs.scaleDefault);
+      }
+      if (type==='Opacity') {
+        this.updateParams(refs.opacityDefault);
+      }
       this.initView(type);
       this.setTitle();
     }
@@ -268,6 +274,30 @@ class Operation extends HTMLElement {
           this.shadowRoot.getElementById(this.componentId+"-settings")._flow=this.flow;
        });  
       }
+      if (type==="Scale"){
+        this.shadowRoot.querySelector('[role="type"]')._value='Scale';
+        this.shadowRoot.querySelector('#open').setAttribute('icon', 'scale');
+
+        opTemplate.innerHTML = `<scale-settings  op="${this.componentId}" id="${this.componentId}-settings" flow="${this.flow}"></scale-settings>`;
+        this.shadowRoot.getElementById('settings-body').append(...opTemplate.content.children);  
+  
+        customElements.whenDefined("scale-settings").then(() => {
+          this.shadowRoot.getElementById(this.componentId+"-settings")._params=this.params;
+          this.shadowRoot.getElementById(this.componentId+"-settings")._flow=this.flow;
+       });  
+      }
+      if (type==="Opacity"){
+        this.shadowRoot.querySelector('[role="type"]')._value='Opacity';
+        this.shadowRoot.querySelector('#open').setAttribute('icon', 'opacity');
+
+        opTemplate.innerHTML = `<opacity-settings  op="${this.componentId}" id="${this.componentId}-settings" flow="${this.flow}"></opacity-settings>`;
+        this.shadowRoot.getElementById('settings-body').append(...opTemplate.content.children);  
+  
+        customElements.whenDefined("opacity-settings").then(() => {
+          this.shadowRoot.getElementById(this.componentId+"-settings")._params=this.params;
+          this.shadowRoot.getElementById(this.componentId+"-settings")._flow=this.flow;
+       });  
+      }
       this.updateOverview();
     }
 
@@ -285,6 +315,14 @@ class Operation extends HTMLElement {
       if(this.type==="Rotation") {
         if (this.params['angle-mode']==="Bezier") label="Bezier";
         if (this.params['angle-mode']=="Fixed") label=this.params['angle']+'°'
+      }
+      if(this.type==="Scale") {
+        if (this.params['scale-mode']==="Bezier") label="Bezier";
+        if (this.params['scale-mode']=="Fixed") label=this.params['scale']+'%'
+      }
+      if(this.type==="Opacity") {
+        if (this.params['opacity-mode']==="Bezier") label="Bezier";
+        if (this.params['opacity-mode']=="Fixed") label=this.params['opacity']+'%'
       }
         this.shadowRoot.querySelector('#overview').innerHTML=label;
     }
