@@ -24,6 +24,14 @@ template.innerHTML = /* html */ `
     font-weight: 600;
     line-height: 32px;
   }
+  #add-op-container {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    padding: 0 8px 0 16px;
+    align-items: center;
+    opacity: 0.6;
+  }
   </style>
   <div class="flow-container">
     <div class="label-row">
@@ -31,9 +39,12 @@ template.innerHTML = /* html */ `
       <text-input id="repeat" tooltip="Number of repetitions" default-value="5" icon="repeat" size="S">
       </text-input>
       <icon-button class="small-flex" id="del" action='del-flow' icon="remove" tooltip="Delete flow"></icon-button>
-      <icon-button class="small-flex" id="add" action='add-op' icon="add" tooltip="Add operation to flow"></icon-button>
-    </div>
+   </div>
     <div id="ops-container">
+    </div>
+    <div id="add-op-container">
+     <icon-button class="small-flex" id="add" action='add-op' icon="add" tooltip="Add operation to flow"></icon-button>
+     <div class="label" id="title">Add operation</div>
     </div>
   </div>
 `; 
