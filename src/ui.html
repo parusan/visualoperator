@@ -34,6 +34,7 @@
 <script>
 // Init
 let container = document.getElementById('picontainer');
+let styles = window.getComputedStyle(document.documentElement);
 let parameters={
   };
 
@@ -120,11 +121,7 @@ document.addEventListener("trigger", function(event) {
     deleteFlow(event.detail.parent);
   }
   if (event.detail.action==="save"){
-    parent.postMessage(
-    { pluginMessage: 
-      { type: 'save', settings}
-    }, '*'
-  );
+      save();
     }
     if (event.detail.action==="load"){
         parent.postMessage(
@@ -279,6 +276,32 @@ function deleteFlow(id){
       else {
         console.log('Element not found')
       }
+   }
+
+   function save(){
+    let colors= {
+      'bg': styles.getPropertyValue('--figma-color-bg'),
+      'bg-secondary': styles.getPropertyValue('--figma-color-bg-secondary'),
+      'text': styles.getPropertyValue('--figma-color-text'),
+      'text-secondary' :styles.getPropertyValue('--figma-color-text-secondary'),
+      'translation': styles.getPropertyValue('--color-accent1'),
+      'rotation': styles.getPropertyValue('--color-accent6'),
+      'scale': styles.getPropertyValue('--color-accent4'),
+      'opacity': styles.getPropertyValue('--color-accent2')
+    }
+
+    let icons = {
+      'translation': document.getElementById('message-icon-danger').translationSvg,
+      'rotation': document.getElementById('message-icon-danger').rotationSvg,
+      'scale': document.getElementById('message-icon-danger').scaleSvg,
+      'opacity': document.getElementById('message-icon-danger').opacitySvg,
+    }
+
+    parent.postMessage(
+    { pluginMessage: 
+      { type: 'save', settings, colors, icons}
+    }, '*'
+  );
    }
 
 

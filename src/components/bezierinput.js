@@ -55,15 +55,6 @@ class BezierInput extends HTMLElement {
 
       this.styles = getComputedStyle(document.documentElement)
 
-      let handlesColor = ""; // The dots that can be moved
-      let handlesBorderColor = ""; // The border of the dots that can be moved
-      let handleLinesColors = ""; // The color of the lines drawn as tangents to the Bezier. They move with the handles
-      let controlsColor = ""; // The color of the origins that can not be moved
-      let bezierColor = ""; // The color of the Bezier curve
-      let bgColor = ""; // the background
-      let bgBorderColor = ""; // the border around the background
-      let baselineColor = ""; // The diagonal across the component
-
       // !!! Some style declarations are left in the CSS ... because easier
 
       // Define the points as {x, y}

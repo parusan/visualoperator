@@ -33,12 +33,11 @@ template.innerHTML = /* html */ `
   .control {
     position: absolute;
     border-radius: 50%;
-    background: var(--figma-color-bg-disabled-secondary);
+    background: var(--color-accent1);
     cursor: grab;
   }
   .control.draggable {
-    background: var(--figma-color-bg-brand);
-    box-shadow: var(--elevation-500-modal-window, 0px 2px 14px rgba(0, 0, 0, .15), 0px 0px 0px .5px rgba(0, 0, 0, .2));
+    background: var(--color-accent1);
     z-index: 2;
   }
   .control.dragging {
@@ -56,6 +55,7 @@ template.innerHTML = /* html */ `
   }
   #bg {
     border-style: dashed;
+    border-color: var(--color-accent11)
   }
   .ghost {
     opacity: 0.6;
@@ -98,6 +98,10 @@ class OriginInput extends HTMLElement {
       this.startX=0;
       this.startY=0;
       this.anchored=false;
+
+      // Colors
+      this.styles = getComputedStyle(document.documentElement)
+
       // Define the points as {x, y}
       // First the anchors that will sit around the object
       this.objectTL = { x: 0, y: 0, r:2, show: false};
@@ -152,7 +156,7 @@ class OriginInput extends HTMLElement {
       this.addEventListener("update-zoom-view", function(e) {
         if (e.detail.parent===(this.parent+'-'+this.componentId)) 
         { 
-          this.setZoom(e.detail.zoom);
+          this.updateZoom(e.detail.zoom);
         }
         });
 
@@ -160,7 +164,7 @@ class OriginInput extends HTMLElement {
       this.addEventListener("update-zoom", function(e) {
         if (e.detail.parent===(this.parent+'-'+this.componentId)) 
         { 
-          this.setZoom(e.detail.zoom);
+          this.updateZoom(e.detail.zoom);
           this.register();
         }
         });
@@ -361,6 +365,14 @@ initZoom(zoom){
     this.drawGhost();
   }
 
+  updateZoom(zoom) {
+    this.control.x = (zoom-1)/(2*zoom) + (2*this.control.x*this.zoom-this.zoom+1)/(2*zoom);
+    this.control.y = (zoom-1)/(2*zoom) + (2*this.control.y*this.zoom-this.zoom+1)/(2*zoom);
+    this.zoom=zoom;
+    this.drawAnchors();
+    this.updateControl();
+  }
+
   setAngle(angle){
     this.angle=angle;
    this.drawGhost();
@@ -380,7 +392,8 @@ initZoom(zoom){
       this.clear();
         //  Drawing the line to the center
         this.ctx.lineWidth = 1;
-        this.ctx.strokeStyle = "#0000004d";
+        this.ctx.strokeStyle = this.styles.getPropertyValue('--color-accent7');
+        this.ctx.setLineDash([8, 8]);
         this.ctx.beginPath();  
         this.ctx.moveTo(this.objectC.x*this.width, this.objectC.y*this.height);
         this.ctx.lineTo(this.control.x*this.width, this.control.y*this.height);

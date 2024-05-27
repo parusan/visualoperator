@@ -179,6 +179,22 @@ this.save=`  <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/
 
   }
 
+  get translationSvg() {
+    return this.translation;
+  }
+
+  get rotationSvg() {
+    return this.rotation;
+  }
+
+  get scaleSvg() {
+    return this.scale;
+  }
+
+  get opacitySvg() {
+    return this.opacity;
+  }
+
   setSize(size){
     this.size=size;
     this.shadowRoot.querySelector('.icon-container').setAttribute('size',size);

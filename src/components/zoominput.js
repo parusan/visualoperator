@@ -4,45 +4,64 @@ const template = document.createElement("template");
 template.innerHTML = /* html */ `
   <style>
   #container {
-    padding: 0 8px;
+    padding: 0 16px;
     box-sizing: border-box;
-    overflow: hidden;
   }
   #dragarea {
     position: relative;
-    overflow: hidden;
     display: block;
-    width: 8px;
   }
 
   .control {
     position: absolute;
-    border-radius: 50%;
-    background: var(--figma-color-bg-secondary);
-    cursor: grab;
+    border-radius: 2px;
+    background: var(--figma-color-bg);
+    border: 1px solid var(--color-accent11);
+    pointer-events: none;   
   }
   .control.draggable {
-    box-shadow: var(--elevation-500-modal-window, 0px 2px 14px rgba(0, 0, 0, .15), 0px 0px 0px .5px rgba(0, 0, 0, .2));
-    z-index: 2;
+    cursor: grab;
+     z-index: 2;
   }
   .control.dragging {
-    cursor: grabbing !important;
+    cursor: grabbing !important;  
   }
 
   #guide {
-    border-right: 1px solid var(--figma-color-border);
+    border-right: 1px solid var(--color-accent7);
     position: absolute;
     width: 50%;
     height: 100%;
+    pointer-events: none; 
+  }
+
+  #display, #title {
+    box-sizing: border-box;
+    height: 20px;
+    padding: 0 0 4px;
+    font-size: 16px;
+    line-height: 16px;
+    text-align: center;
+    color: var(--figma-color-text-secondary);
+  }
+  #display {
+    padding: 4px 0 0;
+    color: var(--color-accent11);
+  }
+  #title {
+    font-size: 12px;
   }
   
   </style>
+  <div id="title">ZOOM</div>
   <div id="container">
     <div id="dragarea">
       <div id="guide">
       </div>
     </div>
   </div>
+  <div id="display">2X</div>
+
 `; 
 
 class ZoomInput extends HTMLElement {
@@ -53,10 +72,10 @@ class ZoomInput extends HTMLElement {
       this.componentId='';
       this.parent='default';
       this.height = 0;
-      this.width = 8;
+      this.width = 32;
       this.zoom = 2;
       this.minZoom = 1;
-      this.maxZoom = 6;
+      this.maxZoom = 5;
       // drag related variables
       this.dragok = false;
       this.startX=0;
@@ -64,7 +83,7 @@ class ZoomInput extends HTMLElement {
       this.anchored=false;
 
       // Then the points that can be moved
-      this.control = { x: 0, y: 0, r: 4, isDragging: false};
+      this.control = { x: 0, y: 0, w: 32, h: 4, isDragging: false};
       this.controlElement = '';
 
      // Attach a shadow root to <bezier-input>.
@@ -86,9 +105,8 @@ class ZoomInput extends HTMLElement {
     this.dragArea.append(...optionTemplate.content.children);
     this.controlElement=this.shadowRoot.querySelector('#control');
     // And then we update its coordinates
-    let ctrlY = this.control.y*this.height-this.control.r;
-    let radius = this.control.r*2;
-    this.controlElement.setAttribute('style', `width: ${radius}; height: ${radius}; left: 0;top: ${ctrlY}`)   
+    let ctrlY = this.control.y*this.height-this.control.h;
+    this.controlElement.setAttribute('style', `width: ${this.control.w}; height: ${this.control.h}; left: 0;top: ${ctrlY}`)   
 
     this.draw();
 
@@ -96,7 +114,7 @@ class ZoomInput extends HTMLElement {
     this.dragArea.onmousedown = (e) => this.myDown(e, this.control) ;
     this.dragArea.onmouseup = (e) => this.myUp(e, this.control) ;
     this.dragArea.onmousemove = (e) => this.myMove(e, this.control) ;
-    // this.shadowRoot.querySelector("#container").onmouseleave = (e) => this.myMoveOut(e, this.control) ;
+    this.dragArea.onmouseout = (e) => this.myMoveOut(e, this.control) ;
 } 
 
 set _zoom(zoom) {
@@ -119,18 +137,21 @@ attributeChangedCallback(name, oldValue, newValue) {
       // redraw the scene
     draw() {
         // redraw the control
-        this.controlElement.setAttribute('style', `width: ${this.control.r*2}; height: ${this.control.r*2}; left: 0;top: ${this.control.y*this.height-this.control.r}`)    
-    } 
+        this.controlElement.setAttribute('style', `width: ${this.width}; height: ${this.control.h}; left: 0;top: ${this.control.y*this.height-this.control.h/2}`)    
+        let displayZoom = Math.round(10 * (1/this.zoom))/10;
+        this.shadowRoot.querySelector('#display').innerHTML = displayZoom + "X";
+      } 
 
 
     setDimensions(val) {
-      this.height = val; 
-       this.dragArea.setAttribute('style', `height: ${val}px;`)
+      this.height = val - 40; 
+       this.dragArea.setAttribute('style', `height: ${this.height}px; width: ${this.width}px;`)
     }
 
     updateView(control){
+      this.zoom = Math.round(10 * (1+(this.control.y*(this.maxZoom-1))))/10;
       this.shadowRoot.dispatchEvent(new CustomEvent("update-zoom-view", {
-      detail: { zoom: 1+(this.control.y*(this.maxZoom-1)), parent:this.parent  },
+      detail: { zoom: this.zoom, parent:this.parent  },
       composed: true,
       bubbles: true
       }));
@@ -144,7 +165,7 @@ attributeChangedCallback(name, oldValue, newValue) {
     }
 
     initZoom(zoom){
-      this.zoom= parseInt(zoom,10);
+      this.zoom= Math.round(zoom*10)/10;
       if (this.zoom<1) this.zoom=1;
       if (this.zoom>this.maxZoom) this.maxZoom=this.zoom;
       this.control.y=this.zoom/this.maxZoom;
@@ -158,6 +179,7 @@ attributeChangedCallback(name, oldValue, newValue) {
     e.preventDefault();
     e.stopPropagation();
 
+
     // get the current mouse position
     const mx = parseInt(e.clientX);
     const my = parseInt(e.clientY);
@@ -166,13 +188,10 @@ attributeChangedCallback(name, oldValue, newValue) {
 
     var s = this.control;
     // calculate the distance between the mouse click and the objects
-    const dx = s.x*this.width + this.dragArea.getBoundingClientRect().x - mx;
     const dy = s.y*this.height + this.dragArea.getBoundingClientRect().y - my;
 
-    //  console.log('Mouse: ', e.clientX, e.clientY,'Shape: ', s.x + this.shadowCanvas.getBoundingClientRect().x, s.y+ this.shadowCanvas.getBoundingClientRect().y,'Distance: ', dx, dy);
-
     // test if the mouse is inside this circle
-    if (!this.dragok && dx * dx + dy * dy < (s.r*2) * (s.r*2)) {
+    if (!this.dragok && dy * dy < ((s.h*2) * (s.h*2))) {
       this.dragok = true;
       s.isDragging = true;
       this.setDragging();
@@ -206,6 +225,7 @@ attributeChangedCallback(name, oldValue, newValue) {
 
   // // handle events when the mouse leaves the canvas
   myMoveOut(e, control) {
+
     // tell the browser we're handling this mouse event
     e.preventDefault();
     e.stopPropagation();
@@ -219,9 +239,11 @@ attributeChangedCallback(name, oldValue, newValue) {
 
   // handle mouse moves
   myMove(e, control) {
-          // tell the browser we're handling this mouse event
-          e.preventDefault();
-          e.stopPropagation();
+    // tell the browser we're handling this mouse event
+    e.preventDefault();
+    e.stopPropagation();
+
+    this.checkMouse(e, control);
     // if we're dragging anything...
     if (this.dragok) {
 
@@ -239,6 +261,7 @@ attributeChangedCallback(name, oldValue, newValue) {
       // since the last mousemove
         const s = control;
         if (s.isDragging) {
+          this.dragArea.style.cursor='grabbing';
             s.y += dy/this.height; // We move only vertically
             if (s.y > this.height) s.y=this.height;
             if (s.y < 0) s.y=0;
@@ -252,6 +275,23 @@ attributeChangedCallback(name, oldValue, newValue) {
       this.startY = my;
     }
 
+  }
+
+  checkMouse(e, controls) {
+    // get the current mouse position
+    const mx = parseInt(e.clientX);
+    const my = parseInt(e.clientY);
+    this.dragArea.style.cursor='default';
+    // test each shape to see if mouse is inside
+
+      var s = this.control;
+    // calculate the distance between the mouse click and the objects
+    const dy = s.y*this.height + this.dragArea.getBoundingClientRect().y - my;
+
+      // test if the mouse is close enough to the shape
+      if (!this.dragok && dy * dy < ((s.h*2) * (s.h*2))) {
+        this.dragArea.style.cursor='grab';
+      }
   }
 
 
