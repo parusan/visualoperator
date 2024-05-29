@@ -88,6 +88,7 @@ class OriginInput extends HTMLElement {
       this.componentId='';
       this.parent='default';
       this.type='default';
+      this.mode='default';
 
       this.height = 0;
       this.width = 0;
@@ -213,6 +214,7 @@ class OriginInput extends HTMLElement {
     this.setDimensions(this.getAttribute('size'));
     this.componentId=this.getAttribute('id');
     this.type=this.getAttribute('role');
+    this.setMode(this.getAttribute('mode'))
 
     // We try to request the ghost of the SVG
     this.getGhost();
@@ -287,17 +289,17 @@ class OriginInput extends HTMLElement {
 
     // listen for mouse events
     this.dragArea.onmousedown = (e) => this.myDown(e, this.control) ;
-    document.onmouseup = (e) => this.myUp(e, this.control) ;
-    document.onmousemove = (e) => this.myMove(e, this.control) ;
+    this.dragArea.onmouseup = (e) => this.myUp(e, this.control) ;
+    this.dragArea.onmousemove = (e) => this.myMove(e, this.control) ;
     // this.dragArea.onmouseleave = (e) => this.myMoveOut(e, this.control) ;
 }
 
  initControl() {
     // Then we initialize the control
     const optionTemplate = document.createElement('template');
-    optionTemplate.innerHTML = `<div class="control draggable" id="control"></div>`;
+    optionTemplate.innerHTML = `<div class="control draggable" id="control-${this.componentId}"></div>`;
     this.dragArea.append(...optionTemplate.content.children);
-    this.controlElement=this.shadowRoot.querySelector('#control');
+    this.controlElement=this.shadowRoot.querySelector('#control-'+this.componentId);
     // And then we update its coordinates
     let ctrlX = this.control.x*this.width-this.control.r;
     let ctrlY = this.control.y*this.height-this.control.r;
@@ -333,6 +335,13 @@ attributeChangedCallback(name, oldValue, newValue) {
     }
   }
 
+  setMode(mode){
+    if (mode==="nozoom") {
+      this.zoom = 1;
+      this.shadowRoot.querySelector('#zoom').style.display='none';
+    }
+  }
+
   setGhost(svg){
     this.emptyGhost();
     this.ghostSvg=svg;
@@ -355,12 +364,14 @@ attributeChangedCallback(name, oldValue, newValue) {
   }
 
 initZoom(zoom){
-  this.setZoom(zoom);
-  this.zoomEl._zoom=zoom;
+    this.setZoom(zoom);
+    this.zoomEl._zoom=zoom;
 }
 
   setZoom(zoom){
     this.zoom=zoom;
+    if (this.mode ==='nozoom') this.zoom = 1; // we bypass the saved parameter just in case
+    console.log(this.zoom);
     this.drawAnchors();
     this.drawGhost();
   }

@@ -60,7 +60,7 @@ template.innerHTML = /* html */ `
       <div class="label sublabel">Scaling origin</div>
     </div>
     <div class="row">
-      <origin-input id="origin" role="origin" size="100"></origin-input>
+      <origin-input id="origin" role="origin" size="100" mode="nozoom"></origin-input>
     </div>
   </div>
 `; 

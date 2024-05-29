@@ -31,6 +31,8 @@ export function toFigmaMatrix(matrixObject){
 
 export function getTranslationMatrices (settings, repeat) {
 
+    console.log('settings', settings)
+
     let translations = [];
     let matricesX = [];
     let matricesY = [];
@@ -44,7 +46,6 @@ export function getTranslationMatrices (settings, repeat) {
     for (let i=0; i<repeat; i++){
         tx=matricesX[i];
         ty=matricesY[i];
-        console.log('txty',tx,ty)
         let matrix = translate(tx,ty);
         translations.push(matrix);
     }
@@ -144,6 +145,153 @@ export function getBezierRotation (controls,repeat, angle, width, height, origin
         }
     return matrix;
 }
+
+
+
+// ******************** SCALE 
+// ***********************************************
+
+export function getScaleMatrices (settings, repeat, nodeInfo) {
+    if (settings.params['scale-mode']==='Fixed') {
+        return getFixedScale(repeat, settings, nodeInfo);
+    }
+    if (settings.params['scale-mode']==='Bezier') {
+         return getBezierScale(settings.params['bezier-controls-scale'], repeat, settings, nodeInfo);
+        }
+}
+
+// Calculating the rotation matrix
+export function getFixedScale (repeat, settings, nodeInfo) {
+    let result={
+        'translations':[],
+        'scale':[]
+    };
+    // Init the first step
+    let sc = settings.params.scale/100;
+    let newScale = 1;
+    result.scale.push(newScale);
+
+    let tx=0;
+    let ty=0;
+    let matrix = translate(tx,ty);
+    result.translations.push(matrix);
+
+    for(var i=0; i<repeat-1; i++) {
+
+        // First we generate the scales
+        newScale = newScale * sc;
+        result.scale.push(newScale);
+
+        // We translate to adapt to the origin
+
+        // FOR NOW: MOVE TO THE CENTER
+
+        tx=nodeInfo.width*(1-newScale)*settings.params.origin.x;
+        ty=nodeInfo.height*(1-newScale)*settings.params.origin.y;
+        let matrix = translate(tx,ty);
+        result.translations.push(matrix);
+    }
+    return result;
+}
+
+
+// Returns a matrix with the angles based on the values of the control points
+export function getBezierScale (controls,repeat, settings, nodeInfo) {
+    let result={
+        'translations':[],
+        'scale':[]
+    };
+    let sc = settings.params.scale/100 - 1;
+    let bezierMatrix = getNormalizedBezier(controls,repeat);
+
+    let totalSoFar = sc;
+
+    let tx=0;
+    let ty=0;
+    let matrix = translate(tx,ty);
+
+    for(var i=0; i<repeat; i++) {
+        // Calculations for the spacing
+        let stepSize = bezierMatrix[i].normalizedGap;
+        totalSoFar = totalSoFar + stepSize*sc;
+        result.scale.push(1+totalSoFar);
+
+        tx=nodeInfo.width*(1-(1+totalSoFar))*settings.params.origin.x;
+        ty=nodeInfo.height*(1-(1+totalSoFar))*settings.params.origin.y;
+
+        let matrix = translate(tx,ty);
+        result.translations.push(matrix);
+    }
+    return result;
+
+}
+
+
+
+// ******************** OPACITY 
+// ***********************************************
+
+export function getOpacityMatrices (settings, repeat, nodeInfo) {
+    if (settings.params['opacity-mode']==='Fixed') {
+        return getFixedOpacity(repeat, settings);
+    }
+    if (settings.params['opacity-mode']==='Bezier') {
+         return getBezierOpacity(settings.params['bezier-controls-opacity'], repeat, settings, nodeInfo);
+        }
+}
+
+// Calculating the opacity matrix for this step
+export function getFixedOpacity (repeat, settings) {
+    let matrix=[];
+    // Init the first step
+    let sc = settings.params.opacity/100;
+
+    for(var i=0; i<repeat; i++) {
+        matrix.push(sc);
+    }
+    return matrix;
+}
+
+
+// Returns a matrix with the angles based on the values of the control points
+export function getBezierOpacity (controls,repeat, settings, nodeInfo) {
+    let matrix=[];
+
+    let val = settings.params.opacity/100 - 1;
+    let bezierMatrix = getNormalizedBezier(controls,repeat);
+
+    for(var i=0; i<repeat; i++) {
+        // Calculations for the opacity
+        let stepSize = bezierMatrix[i].normalizedGap * val;
+        matrix.push(1+stepSize);
+    }
+    console.log(matrix);
+    return matrix;
+}
+
+// Returns a matrix with the angles based on the values of the control points
+// export function getBezierOpacity (controls,repeat, settings, nodeInfo) {
+//     let matrix=[];
+
+//     let val = settings.params.opacity/100 - 1;
+//     let bezierMatrix = getNormalizedBezier(controls,repeat);
+//     console.log(bezierMatrix);
+//     let totalSoFar = val;
+
+
+//     for(var i=0; i<repeat; i++) {
+//         // Calculations for the spacing
+//         let stepSize = bezierMatrix[i].normalizedGap;
+//         totalSoFar = totalSoFar + stepSize*val;
+//         console.log(totalSoFar)
+//         matrix.push(1+totalSoFar);
+//     }
+//     return matrix;
+
+// }
+
+
+
 
 // Returns a matrix with the position of the clones in the case of a bezier curve on the Y axis
 // We always use the Y value of the curve

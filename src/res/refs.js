@@ -51,7 +51,7 @@ export const scaleDefault = {
 
   export const opacityDefault = {
     "opacity-mode":"Bezier", // Bezier or Fixed
-    "opacity":200, // percents
+    "opacity":120, // percents
     "bezier-controls-opacity":{
         'start': {'x':0, 'y': 1},
         'cp1': {'x':0.12, 'y': 0.56},
