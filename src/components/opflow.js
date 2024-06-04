@@ -177,7 +177,6 @@ class OpFlow extends HTMLElement {
       console.log('Adding default transformation');
       let op={...this.getOperation()};
       this.ops.push(op);
-      console.log(op);
       // Then we add it to the UI
       this.addOpToView(op);
       // And we update the data at the plugin level

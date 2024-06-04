@@ -46,13 +46,13 @@ template.innerHTML = /* html */ `
       <div class="label sublabel">Rotation spacing</div>
     </div>
     <div class="row">
-      <figma-select values="Fixed|Bezier" values-icons="fixed-space|curve" id="angle-mode" role="angle-mode" class='figma-select' tooltip="Select the rotation for each clone">
+      <figma-select values="Fixed|Bezier" values-icons="fixed-space|curve" id="mode" role="mode" class='figma-select' tooltip="Select the rotation for each clone">
       </figma-select>
       <text-input id="angle" role="angle" tooltip="Angle" default-value="0" icon="angle" unit="°">
       </text-input>
     </div>
     <div class="row">
-      <bezier-input id="bezier-controls-angle" role="bezier-controls-angle" height="100" width="176"></bezier-input>
+      <bezier-input id="bezier-controls" role="bezier-controls" height="100" width="176"></bezier-input>
     </div>
   </div>
   <div class="section section-spacing spacer-bottom">
@@ -83,11 +83,10 @@ class SettingsRotation extends HTMLElement {
 
         if (e.detail.target===this.parent) 
         { 
-          console.log(e.detail)
             this.params[e.detail.param]= e.detail.data;
             this.register();
             // If we are changing the mode, we have to update the view
-            if (e.detail.param==="angle-mode") this.switchMode('#bezier-controls-angle', e.detail.data);
+            if (e.detail.param==="mode") this.switchMode('#bezier-controls', e.detail.data);
             // update the origin thingy with the angle
             if (e.detail.param==="angle") this.shadowRoot.querySelector('#origin')._angle = e.detail.data;
         }
@@ -127,20 +126,20 @@ class SettingsRotation extends HTMLElement {
 
     setParentId(parentId) {
       this.parent = parentId;
-      this.shadowRoot.querySelector('#angle-mode').setAttribute('parent', parentId);
+      this.shadowRoot.querySelector('#mode').setAttribute('parent', parentId);
       this.shadowRoot.querySelector('#angle').setAttribute('parent', parentId);
-      this.shadowRoot.querySelector('#bezier-controls-angle').setAttribute('parent', parentId);
+      this.shadowRoot.querySelector('#bezier-controls').setAttribute('parent', parentId);
       this.shadowRoot.querySelector('#origin').setAttribute('parent', parentId);
     }
 
     initParams(params){
 
-      let modeangle = params['angle-mode'] !== '' ? params['angle-mode'] : refs.rotationDefault['angle-mode'];
-      this.shadowRoot.querySelector('#angle-mode')._value = modeangle ;
-      this.switchMode('#bezier-controls-angle', modeangle);
+      let modeangle = params['mode'] !== '' ? params['mode'] : refs.rotationDefault['mode'];
+      this.shadowRoot.querySelector('#mode')._value = modeangle ;
+      this.switchMode('#bezier-controls', modeangle);
 
-      let controlsangle = {... params['bezier-controls-angle'] ? params['bezier-controls-angle'] : refs.rotationDefault['bezier-controls-angle']};
-      this.shadowRoot.querySelector('#bezier-controls-angle')._controlsValue = controlsangle;
+      let controlsangle = {... params['bezier-controls'] ? params['bezier-controls'] : refs.rotationDefault['bezier-controls']};
+      this.shadowRoot.querySelector('#bezier-controls')._controlsValue = controlsangle;
 
       let angle = params['angle']>=0 ? params['angle'] : refs.rotationDefault['angle'];
       this.shadowRoot.querySelector('#angle')._val = angle;

@@ -371,7 +371,6 @@ initZoom(zoom){
   setZoom(zoom){
     this.zoom=zoom;
     if (this.mode ==='nozoom') this.zoom = 1; // we bypass the saved parameter just in case
-    console.log(this.zoom);
     this.drawAnchors();
     this.drawGhost();
   }
@@ -459,7 +458,6 @@ initZoom(zoom){
         y: this.control.y,
         zoom: this.zoom
       }
-      console.log('registering')
       this.shadowRoot.dispatchEvent(new CustomEvent("update-param", {
       detail: { data: newOrigin, "data-label":'origin-controls', target: this.parent, param:this.componentId  },
       composed: true,

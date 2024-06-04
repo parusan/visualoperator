@@ -46,25 +46,14 @@ template.innerHTML = /* html */ `
       <div class="label sublabel">Horizontal</div>
     </div>
     <div class="row">
-        <figma-select values="Bezier|Fixed" values-icons="curve|fixed-space" id="x-mode" role="x-mode" class='figma-select' tooltip="Type of spacing"></figma-select>
-   </div>
+        <figma-select values="Bezier|Fixed" values-icons="curve|fixed-space" id="mode" role="mode" class='figma-select' tooltip="Type of spacing"></figma-select>
+        <figma-select values="Horizontal|Vertical" values-icons="horizontal-arrows|vertical-arrows" id="direction" role="direction" class='figma-select' tooltip="Diretion"></figma-select>
+      </div>
     <div class="row">
-    <text-input id="offset-x" role="offset-x" tooltip="Horizontal gap" icon="horizontal-arrows" unit="px"> </text-input>
-</div>
-    <div class="row">
-      <bezier-input id="bezier-controls-x" role="bezier-controls-x" height="100" width="176"></bezier-input>
-    </div>
-  </div>
-  <div class="section section-spacing">
-    <div class="row">
-      <div class="label sublabel">Vertical</div>
+    <text-input id="offset" role="offset" tooltip="Horizontal gap" icon="horizontal-arrows" unit="px"> </text-input>
     </div>
     <div class="row">
-        <figma-select values="Bezier|Fixed" values-icons="curve|fixed-space" id="y-mode" role="y-mode" class='figma-select' tooltip="Type of spacing">   </figma-select>
-        <text-input id="offset-y" role="offset-y"  tooltip="Vertical gap" default-value="0" icon="vertical-arrows" unit="px">  </text-input>
-    </div>
-    <div class="row">
-      <bezier-input id="bezier-controls-y" role="bezier-controls-y" height="100" width="176"></bezier-input>
+      <bezier-input id="bezier-controls" role="bezier-controls" height="100" width="176"></bezier-input>
     </div>
   </div>
 `; 
@@ -89,8 +78,7 @@ class SettingsTranslation extends HTMLElement {
             this.params[e.detail.param]= e.detail.data;
             this.register();
             // If we are changing the mode, we have to update the view
-            if (e.detail.param==='x-mode') this.setDisplay('#bezier-controls-x', e.detail.data);
-            if (e.detail.param==='y-mode') this.setDisplay('#bezier-controls-y', e.detail.data);
+            if (e.detail.param==='mode') this.setDisplay('#bezier-controls', e.detail.data);
         }
 
       });
@@ -119,33 +107,27 @@ class SettingsTranslation extends HTMLElement {
 
     setParentId(opId) {
       this.parent = opId;
-      this.shadowRoot.querySelector('#x-mode').setAttribute('parent', opId);
-      this.shadowRoot.querySelector('#y-mode').setAttribute('parent', opId);
+      this.shadowRoot.querySelector('#mode').setAttribute('parent', opId);
+      this.shadowRoot.querySelector('#direction').setAttribute('parent', opId);
       // // this.shadowRoot.querySelector('#origin').setAttribute('parent', opId);
-      this.shadowRoot.querySelector('#offset-x').setAttribute('parent', opId);
-      this.shadowRoot.querySelector('#offset-y').setAttribute('parent', opId);
-      this.shadowRoot.querySelector('#bezier-controls-x').setAttribute('parent', opId);
-      this.shadowRoot.querySelector('#bezier-controls-y').setAttribute('parent', opId);
+      this.shadowRoot.querySelector('#offset').setAttribute('parent', opId);
+      this.shadowRoot.querySelector('#bezier-controls').setAttribute('parent', opId);
     }
 
     initParams(params) {
       // for each field, we check if we are passed a value and if not we set to 0 or default defined in refs
-      let offx = params['offset-x']>=0 ? params['offset-x'] : refs.translationDefault['offset-x'];
-      this.shadowRoot.querySelector('#offset-x')._val = offx;
+      let offx = params['offset']>=0 ? params['offset'] : refs.translationDefault['offset'];
+      this.shadowRoot.querySelector('#offset')._val = offx;
 
-      let offy = params['offset-y']>=0 ? params['offset-y'] : refs.translationDefault['offset-y'];
-      this.shadowRoot.querySelector('#offset-y')._val = offy;
+      let modex = params['mode'] !== '' ? params['mode'] : refs.translationDefault['mode'];
+      this.shadowRoot.querySelector('#mode')._value = modex;
+      this.setDisplay('#bezier-controls', modex);
 
-      let modex = params['x-mode'] !== '' ? params['x-mode'] : refs.translationDefault['x-mode'];
-      this.shadowRoot.querySelector('#x-mode')._value = modex;
-      this.setDisplay('#bezier-controls-x', modex);
+      let dir = params['direction'] !== '' ? params['direction'] : refs.translationDefault['direction'];
+      this.shadowRoot.querySelector('#direction')._value = dir;
 
-      let modey = params['y-mode'] !== '' ? params['y-mode'] : refs.translationDefault['y-mode'];
-      this.shadowRoot.querySelector('#y-mode')._value = modey;
-      this.setDisplay('#bezier-controls-y', modey);
-
-      let controlsx = {... params['bezier-controls-x'] ? params['bezier-controls-x'] : refs.translationDefault['bezier-controls-x']};
-      this.shadowRoot.querySelector('#bezier-controls-x')._controlsValue = controlsx;
+      let controlsx = {... params['bezier-controls'] ? params['bezier-controls'] : refs.translationDefault['bezier-controls']};
+      this.shadowRoot.querySelector('#bezier-controls')._controlsValue = controlsx;
     }
 
     setDisplay(item, mode){

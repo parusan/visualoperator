@@ -46,13 +46,13 @@ template.innerHTML = /* html */ `
       <div class="label sublabel">Opacity</div>
     </div>
     <div class="row">
-      <figma-select values="Fixed|Bezier" values-icons="fixed-space|curve" id="opacity-mode" role="opacity-mode" class='figma-select' tooltip="Select the % opacity for each step">
+      <figma-select values="Fixed|Bezier" values-icons="fixed-space|curve" id="mode" role="mode" class='figma-select' tooltip="Select the % opacity for each step">
       </figma-select>
       <text-input id="opacity" role="opacity" tooltip="Scale" default-value="0" icon="alpha" unit="%">
       </text-input>
     </div>
     <div class="row">
-      <bezier-input id="bezier-controls-opacity" role="bezier-controls-opacity" height="100" width="176"></bezier-input>
+      <bezier-input id="bezier-controls" role="bezier-controls" height="100" width="176"></bezier-input>
     </div>
   </div>
 `; 
@@ -75,11 +75,10 @@ class SettingsOpacity extends HTMLElement {
 
         if (e.detail.target===this.parent) 
         { 
-          console.log(e.detail)
             this.params[e.detail.param]= e.detail.data;
             this.register();
             // If we are changing the mode, we have to update the view
-            if (e.detail.param==="opacity-mode") this.switchMode('#bezier-controls-opacity', e.detail.data);
+            if (e.detail.param==="mode") this.switchMode('#bezier-controls', e.detail.data);
         }
         });
   }
@@ -117,19 +116,19 @@ class SettingsOpacity extends HTMLElement {
 
     setParentId(parentId) {
       this.parent = parentId;
-      this.shadowRoot.querySelector('#opacity-mode').setAttribute('parent', parentId);
+      this.shadowRoot.querySelector('#mode').setAttribute('parent', parentId);
       this.shadowRoot.querySelector('#opacity').setAttribute('parent', parentId);
-      this.shadowRoot.querySelector('#bezier-controls-opacity').setAttribute('parent', parentId);
+      this.shadowRoot.querySelector('#bezier-controls').setAttribute('parent', parentId);
     }
 
     initParams(params){
 
-      let mode = params['opacity-mode'] !== '' ? params['opacity-mode'] : refs.scaleDefault['opacity-mode'];
-      this.shadowRoot.querySelector('#opacity-mode')._value = mode ;
-      this.switchMode('#bezier-controls-opacity', mode);
+      let mode = params['mode'] !== '' ? params['mode'] : refs.scaleDefault['mode'];
+      this.shadowRoot.querySelector('#mode')._value = mode ;
+      this.switchMode('#bezier-controls', mode);
 
-      let controls = {... params['bezier-controls-opacity'] ? params['bezier-controls-opacity'] : refs.scaleDefault['bezier-controls-opacity']};
-      this.shadowRoot.querySelector('#bezier-controls-opacity')._controlsValue = controls;
+      let controls = {... params['bezier-controls'] ? params['bezier-controls'] : refs.scaleDefault['bezier-controls']};
+      this.shadowRoot.querySelector('#bezier-controls')._controlsValue = controls;
 
       let opacity = params['opacity']>=0 ? params['opacity'] : refs.scaleDefault['opacity'];
       this.shadowRoot.querySelector('#opacity')._val = opacity;

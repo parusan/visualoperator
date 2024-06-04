@@ -70,6 +70,9 @@ template.innerHTML = /* html */ `
   #overview {
     line-height: 32px;
     overflow: hidden;
+    white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   }
 
   .spacer-bottom {
@@ -251,7 +254,12 @@ class Operation extends HTMLElement {
 
       if (type==="Translation"){
         this.shadowRoot.querySelector('[role="type"]')._value='Translation';
-        this.shadowRoot.querySelector('#open').setAttribute('icon', 'translation');
+        if (this.params.direction==="Vertical") {
+          this.shadowRoot.querySelector('#open').setAttribute('icon', 'translationv');
+        }
+        else {
+          this.shadowRoot.querySelector('#open').setAttribute('icon', 'translation');
+        }
 
         opTemplate.innerHTML = `<translation-settings op="${this.componentId}" id="${this.componentId}-settings" flow="${this.flow}"></translation-settings>`;
         this.shadowRoot.getElementById('settings-body').append(...opTemplate.content.children);  
@@ -309,20 +317,26 @@ class Operation extends HTMLElement {
     updateOverview() {
       let label = "";
       if(this.type==="Translation") {
-        if (this.params['x-mode']=="Bezier") label="Bezier";
-        if (this.params['x-mode']=="Fixed") label=this.params['offset-x']+'px'
+        if (this.params['mode']=="Bezier") label="Bezier";
+        if (this.params['mode']=="Fixed") label=this.params['offset']+'px';
+        if (this.params.direction==="Vertical") {
+          this.shadowRoot.querySelector('#open').setAttribute('icon', 'translationv');
+        }
+        else {
+          this.shadowRoot.querySelector('#open').setAttribute('icon', 'translation');
+        }
       }
       if(this.type==="Rotation") {
-        if (this.params['angle-mode']==="Bezier") label="Bezier";
-        if (this.params['angle-mode']=="Fixed") label=this.params['angle']+'°'
+        if (this.params['mode']==="Bezier") label="Bezier";
+        if (this.params['mode']=="Fixed") label=this.params['angle']+'°'
       }
       if(this.type==="Scale") {
-        if (this.params['scale-mode']==="Bezier") label="Bezier";
-        if (this.params['scale-mode']=="Fixed") label=this.params['scale']+'%'
+        if (this.params['mode']==="Bezier") label="Bezier";
+        if (this.params['mode']=="Fixed") label=this.params['scale']+'%'
       }
       if(this.type==="Opacity") {
-        if (this.params['opacity-mode']==="Bezier") label="Bezier";
-        if (this.params['opacity-mode']=="Fixed") label=this.params['opacity']+'%'
+        if (this.params['mode']==="Bezier") label="Bezier";
+        if (this.params['mode']=="Fixed") label=this.params['opacity']+'%'
       }
         this.shadowRoot.querySelector('#overview').innerHTML=label;
     }

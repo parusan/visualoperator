@@ -1,4 +1,4 @@
-import {rotate, translate,isAffineMatrix} from 'transformation-matrix';
+import {rotate, translate,isAffineMatrix, rotateDEG, applyToPoint, inverse, decomposeTSR} from 'transformation-matrix';
 
 // Calculates the coordinate (X or Y depending on the weights) of a point in time on a Cubic Bézier curve
 export function cubic(t, x0, x1, x2, x3) {
@@ -29,121 +29,100 @@ export function toFigmaMatrix(matrixObject){
     return figmaMatrix;
 }
 
-export function getTranslationMatrices (settings, repeat) {
-
-    console.log('settings', settings)
-
-    let translations = [];
-    let matricesX = [];
-    let matricesY = [];
-    if (settings.params['x-mode']==='Fixed') matricesX = [...getTranslationFixed(repeat, settings.params['offset-x'])];
-    if (settings.params['x-mode']==='Bezier') matricesX = [...getTranslationBezier(settings.params['bezier-controls-x'],repeat, settings.params['offset-x'])];
-    if (settings.params['y-mode']==='Fixed') matricesY = [...getTranslationFixed(repeat, settings.params['offset-y'])];
-    if (settings.params['y-mode']==='Bezier') matricesY = [...getTranslationBezier(settings.params['bezier-controls-y'],repeat, settings.params['offset-y'])];
-
-    let tx=0;
-    let ty=0;
-    for (let i=0; i<repeat; i++){
-        tx=matricesX[i];
-        ty=matricesY[i];
-        let matrix = translate(tx,ty);
-        translations.push(matrix);
-    }
-
-    return translations;
-    
-}
-
-
 
 // Calculates on 1 dimension the translations for a fixed spacing between 2 steps
-export function getTranslationFixed (repeat, offset) { // dimension is the size of the shape on that axis
+export function getTranslationFixed (params, step) { // dimension is the size of the shape on that axis
+    let offset=params.offset;
+    let direction = params.direction;
     let tx=0;
-    let translations=[];
-    for(var i=0; i<repeat; i++) {
-        tx = offset*i;
-        translations.push(tx);
-    }
-    return translations;
+    let ty=0;
+
+    if (direction === 'Horizontal') tx=offset*step;
+    if (direction === 'Vertical') ty=offset*step;
+
+    let matrix = translate(tx,ty);
+    return matrix;
 }
 
 
-export function getTranslationBezier (controls,repeat, offset) {
+export function getTranslationBezier (params,step) {
+    let offset = params.offset;
+    let direction = params.direction;
+    let bzmatrix = params['curve-values'];
+    let tx=0;
+    let ty=0;
+    if (direction === 'Horizontal') tx=offset*bzmatrix[step].normalizedTotal;
+    if (direction === 'Vertical') ty=offset*bzmatrix[step].normalizedTotal;
 
-    let bezierMatrix = getNormalizedBezier(controls,repeat);
-    console.log('bezier matrix', bezierMatrix)
-    let translations = [];
-    let totalSoFar = 0;
-    for(var i=0; i<repeat; i++) {
-        // Calculations for the spacing
-        let stepSize = bezierMatrix[i].normalizedGap*offset;
-        let stepTranslation = stepSize;
-        totalSoFar = totalSoFar + stepTranslation;
-        translations.push(totalSoFar)
-    }
-    return translations;
+    let matrix = translate(tx,ty);
+    return matrix;
 }
 
 // ******************** ROTATIONS 
 // ***********************************************
 
-export function getRotationMatrices (settings, repeat, nodeInfo) {
-    let rotations = [];
-    if (settings.params['angle-mode']==='Fixed') rotations = [...getFixedRotation(repeat, settings.params.angle, nodeInfo.width, nodeInfo.height, settings.params.origin)];
-    if (settings.params['angle-mode']==='Bezier') rotations = [...getBezierRotation(settings.params['bezier-controls-angle'], repeat, settings.params.angle, nodeInfo.width, nodeInfo.height, settings.params.origin)];
-    console.log('rotations',rotations)
-    return rotations;
-}
 
 // Calculating the rotation matrix
-export function getFixedRotation (repeat, angle, width, height, origin) {
-    let matrix = [];
-    let x=0; // We define the original positions on x and y as =0 as we will combine the matrices with the original matrix that defines the object rotation and position
-    let y=0;
-    console.log('origin', origin)
+export function getRotationFixed (params, nodeInfo, step) {
+
+    let angle=params.angle* step;
+    let width = nodeInfo.width;
+    let height= nodeInfo.height;
+    let origin = params.origin;
+
+    if(angle>360) angle = angle % 360; 
+    console.log('new angle', angle, 'step', step)
+
+    // We define the original positions on x and y as =0 as we will combine the matrices with the original matrix that defines the object rotation and position
+    let o = {
+        'x':0,
+        'y':0
+    }
+
+    let prevAngle = decomposeTSR(nodeInfo.transform).rotation.angle;
+
+
     // First we get the center of the object
-    let cx = x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width;
-    let cy = y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height;
-        for(var j=0; j<repeat; j++) {
-            //switching to radians
-            let newAngle = angle*j*(Math.PI/180);
-            if(newAngle>360) newAngle= newAngle % 360; // Getting the remainder in case we are over 360 degrees
-            // The rotation happens around the top left corner, so we translate the object. Here are the new coordinates
-            let newx = Math.cos(newAngle) * x + y * Math.sin(newAngle) - cy * Math.sin(newAngle) - cx * Math.cos(newAngle) + cx
-            let newy = - Math.sin(newAngle) * x + cx * Math.sin(newAngle) + y * Math.cos(newAngle) - cy * Math.cos(newAngle) + cy
-            
-            // let transform = [[Math.cos(newAngle), Math.sin(newAngle), newx],[-Math.sin(newAngle), Math.cos(newAngle), newy ]]
-            let transform = {a:Math.cos(newAngle), b: Math.sin(newAngle), e:newx, c:-Math.sin(newAngle), d:Math.cos(newAngle),f: newy }
-            matrix.push(transform);
-        }
-    return matrix;
+    let c = {
+        'x' : o.x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width,
+        'y' : o.y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height
+    }
+    // c = applyToPoint(rotate(prevAngle), c);
+
+     let transform = rotateDEG(angle, c.x, -c.y);
+     transform.f = -transform.f;
+
+    return transform;
 }
 
 
 // Returns a matrix with the angles based on the values of the control points
-export function getBezierRotation (controls,repeat, angle, width, height, origin) {
-    let x=0; // We define the original positions on x and y as =0 as we will combine the matrices with the original matrix that defines the object rotation and position
-    let y=0;
+export function getRotationBezier (params, nodeInfo, step) {
 
-    // First we get the center of the object
-    let cx = x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width;
-    let cy = y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height;
-    let nbSteps = repeat > 0 ? repeat : 1;
-    let bezierMatrix = getNormalizedBezier(controls,nbSteps);
-    let matrix = [];
-    let angleSoFar = 0;
-        for(var j=0; j<repeat; j++) {
-            let newAngle = bezierMatrix[j].normalizedGap*angle*(Math.PI/180);
-            angleSoFar = angleSoFar + newAngle;
-            // The rotation happens around the top left corner, so we translate the object. Here are the new coordinates
-            let newx = Math.cos(angleSoFar) * x + y * Math.sin(angleSoFar) - cy * Math.sin(angleSoFar) - cx * Math.cos(angleSoFar) + cx
-            let newy = - Math.sin(angleSoFar) * x + cx * Math.sin(angleSoFar) + y * Math.cos(angleSoFar) - cy * Math.cos(angleSoFar) + cy
-            
-            // let transform = [[Math.cos(angleSoFar), Math.sin(angleSoFar), newx],[-Math.sin(angleSoFar), Math.cos(angleSoFar), newy ]]
-            let transform = {a:Math.cos(angleSoFar), b: Math.sin(angleSoFar), e:newx, c:-Math.sin(angleSoFar), d:Math.cos(angleSoFar),f: newy }
-            matrix[j] = transform;
-        }
-    return matrix;
+    let angle = params.angle * params['curve-values'][step].normalizedTotal;
+    let width = nodeInfo.width;
+    let height= nodeInfo.height;
+    let origin = params.origin;
+ 
+    if(angle>360) angle = angle % 360; 
+    console.log('new angle', angle, 'step', step)
+
+    let prevAngle = decomposeTSR(nodeInfo.transform).rotation.angle;
+    // We define the original positions on x and y as =0 as we will combine the matrices with the original matrix that defines the object rotation and position
+    let o = {
+        'x':0,
+        'y':0
+    }
+    let c = {
+        'x' : o.x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width,
+        'y' : o.y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height
+    }
+    c = applyToPoint(rotate(prevAngle), c);
+
+    let transform = rotateDEG(angle, c.x, -c.y);
+    transform.f = -transform.f;
+
+   return transform;
 }
 
 
@@ -231,65 +210,25 @@ export function getBezierScale (controls,repeat, settings, nodeInfo) {
 // ******************** OPACITY 
 // ***********************************************
 
-export function getOpacityMatrices (settings, repeat, nodeInfo) {
-    if (settings.params['opacity-mode']==='Fixed') {
-        return getFixedOpacity(repeat, settings);
-    }
-    if (settings.params['opacity-mode']==='Bezier') {
-         return getBezierOpacity(settings.params['bezier-controls-opacity'], repeat, settings, nodeInfo);
-        }
-}
 
 // Calculating the opacity matrix for this step
-export function getFixedOpacity (repeat, settings) {
-    let matrix=[];
-    // Init the first step
-    let sc = settings.params.opacity/100;
-
-    for(var i=0; i<repeat; i++) {
-        matrix.push(sc);
-    }
-    return matrix;
+export function getOpacityFixed (params, step) {
+    let alpha = Math.pow((params.opacity)/100,step);
+    return alpha;
 }
 
 
 // Returns a matrix with the angles based on the values of the control points
-export function getBezierOpacity (controls,repeat, settings, nodeInfo) {
-    let matrix=[];
+export function getOpacityBezier (params, step) {
+    let alpha  = 1;
+    for (let i = 0; i<step; i++){
 
-    let val = settings.params.opacity/100 - 1;
-    let bezierMatrix = getNormalizedBezier(controls,repeat);
-
-    for(var i=0; i<repeat; i++) {
-        // Calculations for the opacity
-        let stepSize = bezierMatrix[i].normalizedGap * val;
-        matrix.push(1+stepSize);
+        alpha = alpha * (1 + (params.opacity / 100 - 1) * params['curve-values'][i].normalizedGap);
+        console.log(i, alpha)
     }
-    console.log(matrix);
-    return matrix;
+    console.log(alpha)
+    return alpha;
 }
-
-// Returns a matrix with the angles based on the values of the control points
-// export function getBezierOpacity (controls,repeat, settings, nodeInfo) {
-//     let matrix=[];
-
-//     let val = settings.params.opacity/100 - 1;
-//     let bezierMatrix = getNormalizedBezier(controls,repeat);
-//     console.log(bezierMatrix);
-//     let totalSoFar = val;
-
-
-//     for(var i=0; i<repeat; i++) {
-//         // Calculations for the spacing
-//         let stepSize = bezierMatrix[i].normalizedGap;
-//         totalSoFar = totalSoFar + stepSize*val;
-//         console.log(totalSoFar)
-//         matrix.push(1+totalSoFar);
-//     }
-//     return matrix;
-
-// }
-
 
 
 
@@ -323,24 +262,26 @@ export function getNormalizedBezier (controls,nbClones) {
                 time: t, // Time position
                 gap: beziergap, // Distance 0-1 calculated from previous point
                 normalizedGap: 0, // Distance calculated
+                total: bezier, // Total
+                normalizedGap: 0,
+                normalizedTotal: 0
             };
             matrix.push(translation);
     }
+    let normTotal = 0;
     for(var i=0; i<nbClones; i++) {
         matrix[i].normalizedGap = (maxGap > 0) ? matrix[i].gap/maxGap : 0;
+        normTotal = normTotal + matrix[i].normalizedGap;
+        matrix[i].normalizedTotal = normTotal;
     }
     return matrix;
 }
 
-export function getIdentityMatrices (repeat) {
-    let matrices = [];
-    for (let i =0; i< repeat; i++){
+export function getIdentityMatrix () {
         let matrix = {
             a: 1, c: 0, e: 0,
             b: 0, d: 1, f: 0
             };
-            matrices.push(matrix);
-        }
-    return matrices;
+    return matrix;
     
 }

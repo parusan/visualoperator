@@ -46,13 +46,13 @@ template.innerHTML = /* html */ `
       <div class="label sublabel">Scale</div>
     </div>
     <div class="row">
-      <figma-select values="Fixed|Bezier" values-icons="fixed-space|curve" id="scale-mode" role="scale-mode" class='figma-select' tooltip="Select the scale for each clone">
+      <figma-select values="Fixed|Bezier" values-icons="fixed-space|curve" id="mode" role="mode" class='figma-select' tooltip="Select the scale for each clone">
       </figma-select>
       <text-input id="scale" role="scale" tooltip="Scale" default-value="0" icon="diagonal-arrows" unit="%">
       </text-input>
     </div>
     <div class="row">
-      <bezier-input id="bezier-controls-scale" role="bezier-controls-scale" height="100" width="176"></bezier-input>
+      <bezier-input id="bezier-controls" role="bezier-controls" height="100" width="176"></bezier-input>
     </div>
   </div>
   <div class="section section-spacing spacer-bottom">
@@ -83,11 +83,10 @@ class SettingsScale extends HTMLElement {
 
         if (e.detail.target===this.parent) 
         { 
-          console.log(e.detail)
             this.params[e.detail.param]= e.detail.data;
             this.register();
             // If we are changing the mode, we have to update the view
-            if (e.detail.param==="scale-mode") this.switchMode('#bezier-controls-scale', e.detail.data);
+            if (e.detail.param==="mode") this.switchMode('#bezier-controls', e.detail.data);
             // update the origin thingy with the angle
             if (e.detail.param==="scale") this.shadowRoot.querySelector('#origin')._angle = 0;
         }
@@ -127,20 +126,20 @@ class SettingsScale extends HTMLElement {
 
     setParentId(parentId) {
       this.parent = parentId;
-      this.shadowRoot.querySelector('#scale-mode').setAttribute('parent', parentId);
+      this.shadowRoot.querySelector('#mode').setAttribute('parent', parentId);
       this.shadowRoot.querySelector('#scale').setAttribute('parent', parentId);
-      this.shadowRoot.querySelector('#bezier-controls-scale').setAttribute('parent', parentId);
+      this.shadowRoot.querySelector('#bezier-controls').setAttribute('parent', parentId);
       this.shadowRoot.querySelector('#origin').setAttribute('parent', parentId);
     }
 
     initParams(params){
 
-      let modescale = params['scale-mode'] !== '' ? params['scale-mode'] : refs.scaleDefault['scale-mode'];
-      this.shadowRoot.querySelector('#scale-mode')._value = modescale ;
-      this.switchMode('#bezier-controls-scale', modescale);
+      let modescale = params['mode'] !== '' ? params['mode'] : refs.scaleDefault['mode'];
+      this.shadowRoot.querySelector('#mode')._value = modescale ;
+      this.switchMode('#bezier-controls', modescale);
 
-      let controlsscale = {... params['bezier-controls-scale'] ? params['bezier-controls-scale'] : refs.scaleDefault['bezier-controls-scale']};
-      this.shadowRoot.querySelector('#bezier-controls-scale')._controlsValue = controlsscale;
+      let controlsscale = {... params['bezier-controls'] ? params['bezier-controls'] : refs.scaleDefault['bezier-controls']};
+      this.shadowRoot.querySelector('#bezier-controls')._controlsValue = controlsscale;
 
       let scale = params['scale']>=0 ? params['scale'] : refs.scaleDefault['scale'];
       this.shadowRoot.querySelector('#scale')._val = scale;
