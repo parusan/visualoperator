@@ -47,40 +47,40 @@ let defaultsettings={
       id:1,
       name: 'Flow-12',
       ops: [
-        {
-        id: 'Flow-12-1',
-        type: 'Translation',
-        params: {
-          "mode":"Fixed", // Bezier or Fixed
-          "offset":40,
-          "direction": "Horizontal",
-          "bezier-controls":{
-              'start': {'x':0, 'y': 1},
-              'cp1': {'x':0.1, 'y': 0.5},
-              'cp2': {'x':0.75, 'y': 0.25},
-              'end': {'x':1, 'y': 0}
-          }
-          },
-      },
-      // {
-      //   id: 'Flow-12-2',
-      //   type: 'Rotation',
+      //   {
+      //   id: 'Flow-12-1',
+      //   type: 'Translation',
       //   params: {
       //     "mode":"Fixed", // Bezier or Fixed
-      //     "angle":20,
+      //     "offset":40,
+      //     "direction": "Horizontal",
       //     "bezier-controls":{
       //         'start': {'x':0, 'y': 1},
-      //         'cp1': {'x':0.12, 'y': 0.56},
-      //         'cp2': {'x':0.45, 'y': 0.45},
+      //         'cp1': {'x':0.1, 'y': 0.5},
+      //         'cp2': {'x':0.75, 'y': 0.25},
       //         'end': {'x':1, 'y': 0}
-      //     },
-      //     "origin": {
-      //         zoom: 2,
-      //         x: 0.5,
-      //         y:0.5
       //     }
-      //   },
+      //     },
       // },
+      {
+        id: 'Flow-12-2',
+        type: 'Rotation',
+        params: {
+          "mode":"Fixed", // Bezier or Fixed
+          "angle":20,
+          "bezier-controls":{
+              'start': {'x':0, 'y': 1},
+              'cp1': {'x':0.12, 'y': 0.56},
+              'cp2': {'x':0.45, 'y': 0.45},
+              'end': {'x':1, 'y': 0}
+          },
+          "origin": {
+              zoom: 2,
+              x: 0.5,
+              y:0.5
+          }
+        },
+      },
       // {
       //   id: 'Flow-12-3',
       //   type: 'Scale',
@@ -100,20 +100,20 @@ let defaultsettings={
       //     }
       //   },
       // },
-      {
-        id: 'Flow-12-4',
-        type: 'Opacity',
-        params: {
-          "mode":"Fixed", // Bezier or Fixed
-          "opacity":80,
-          "bezier-controls":{
-              'start': {'x':0, 'y': 1},
-              'cp1': {'x':0.12, 'y': 0.56},
-              'cp2': {'x':0.45, 'y': 0.45},
-              'end': {'x':1, 'y': 0}
-          }
-        },
-      }
+      // {
+      //   id: 'Flow-12-4',
+      //   type: 'Opacity',
+      //   params: {
+      //     "mode":"Fixed", // Bezier or Fixed
+      //     "opacity":80,
+      //     "bezier-controls":{
+      //         'start': {'x':0, 'y': 1},
+      //         'cp1': {'x':0.12, 'y': 0.56},
+      //         'cp2': {'x':0.45, 'y': 0.45},
+      //         'end': {'x':1, 'y': 0}
+      //     }
+      //   },
+      // }
     ],
       repeat: 5,
     }

@@ -1,4 +1,4 @@
-import {rotate, translate,isAffineMatrix, rotateDEG, applyToPoint, inverse, decomposeTSR} from 'transformation-matrix';
+import {rotate, translate,isAffineMatrix, rotateDEG, applyToPoint, compose, decomposeTSR} from 'transformation-matrix';
 
 // Calculates the coordinate (X or Y depending on the weights) of a point in time on a Cubic Bézier curve
 export function cubic(t, x0, x1, x2, x3) {
@@ -37,11 +37,14 @@ export function getTranslationFixed (params, step) { // dimension is the size of
     let tx=0;
     let ty=0;
 
-    if (direction === 'Horizontal') tx=offset*step;
-    if (direction === 'Vertical') ty=offset*step;
+    if (direction === 'Horizontal') tx=offset;
+    if (direction === 'Vertical') ty=offset;
 
     let matrix = translate(tx,ty);
-    return matrix;
+    let result = {
+        't': matrix
+    }
+    return result;
 }
 
 
@@ -51,11 +54,14 @@ export function getTranslationBezier (params,step) {
     let bzmatrix = params['curve-values'];
     let tx=0;
     let ty=0;
-    if (direction === 'Horizontal') tx=offset*bzmatrix[step].normalizedTotal;
-    if (direction === 'Vertical') ty=offset*bzmatrix[step].normalizedTotal;
+    if (direction === 'Horizontal') tx=offset*bzmatrix[step].normalizedGap;
+    if (direction === 'Vertical') ty=offset*bzmatrix[step].normalizedGap;
 
     let matrix = translate(tx,ty);
-    return matrix;
+    let result = {
+        't': matrix
+    }
+    return result;
 }
 
 // ******************** ROTATIONS 
@@ -65,36 +71,95 @@ export function getTranslationBezier (params,step) {
 // Calculating the rotation matrix
 export function getRotationFixed (params, nodeInfo, step) {
 
-    let angle=params.angle* step;
+    // let angle=params.angle* step;
+    let angle=params.angle*(Math.PI/180);
     let width = nodeInfo.width;
     let height= nodeInfo.height;
     let origin = params.origin;
-
-    if(angle>360) angle = angle % 360; 
-    console.log('new angle', angle, 'step', step)
-
-    // We define the original positions on x and y as =0 as we will combine the matrices with the original matrix that defines the object rotation and position
-    let o = {
-        'x':0,
-        'y':0
+    let result = {
+        't': {},
+        'r': {}
     }
 
-    let prevAngle = decomposeTSR(nodeInfo.transform).rotation.angle;
+    console.log('new angle', angle, 'step', step)
+    result.r=rotate(angle);
 
+    // We calculate the original position of the center
 
+    // We define the original positions on x and y as =0 as we will combine the matrices with the original matrix that defines the object rotation and position
+    let o = { 'x':nodeInfo.x, 'y':nodeInfo.y }
     // First we get the center of the object
-    let c = {
+    let c = { 
         'x' : o.x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width,
         'y' : o.y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height
     }
-    // c = applyToPoint(rotate(prevAngle), c);
+    let rorigin = rotate(-nodeInfo.angle, o.x, o.y)
+    c = applyToPoint(rorigin, c);
+    console.log(nodeInfo.angle)
+    console.log('rotated center', c)
+    let no = { // The new origin after rotation
+        'x': (o.x-c.x)*Math.cos(angle) + (o.y-c.y)* Math.sin(angle) + c.x,
+        'y': -(o.x-c.x)*Math.sin(angle) + (o.y-c.y)* Math.cos(angle) + c.y
+    }
+    // TODO: BETTER CALCULATE ORIGIN POSITION IF ALREADY ROTATED AT FIRST
 
-     let transform = rotateDEG(angle, c.x, -c.y);
-     transform.f = -transform.f;
+    result.t=translate(no.x - o.x, no.y - o.y);
 
-    return transform;
+
+    // Then we apply the transformations
+
+    return result;
 }
 
+export function testCombine (){
+
+    // !!!! The first operation must best last in the chain (from last to first in compose)
+    // If Rotate > Translate, then it will be translated and rotated around the original position
+    let o={
+        'x': 40, 'y': 20
+    }
+    let c={
+        'x': 60, 'y': 40
+    }
+    let c2={
+        'x': 60, 'y': 200
+    }
+
+    // Original translate
+    let ot = translate(o.x, o.y);
+
+    // Simulated rotations angles
+    let a = 20*(Math.PI/180);
+    let b = 10*(Math.PI/180);
+
+    // Rotate
+    let r = rotate(a);
+    let r2 = rotate(b);
+
+    // Calculates the new position of the center after rotation
+    let no={
+        'x': (o.x-c.x)*Math.cos(a) + (o.y-c.y)* Math.sin(a) + c.x,
+        'y': -(o.x-c.x)*Math.sin(a) + (o.y-c.y)* Math.cos(a) + c.y
+    }
+
+    let no2={
+        'x': (o.x-c2.x)*Math.cos(b) + (o.y-c2.y)* Math.sin(b) + c2.x,
+        'y': -(o.x-c2.x)*Math.sin(b) + (o.y-c2.y)* Math.cos(b) + c2.y
+    }   
+    console.log('no', no)
+    console.log('no', no2)
+
+    // We calculate the translation necessary to adjust the position of the object
+    // It will be combined with the original translation of the object, so no need to use the full value
+   let mto2 = translate(no2.x-o.x, no2.y-o.y);
+
+    let tr = compose(mto2, r2)
+
+    // Combine, from Right to Left (in this case: rotation - translation - translation)
+   let mr = compose(ot, tr, rr);
+   console.log(mr)
+   return mr;
+}
 
 // Returns a matrix with the angles based on the values of the control points
 export function getRotationBezier (params, nodeInfo, step) {
@@ -119,8 +184,7 @@ export function getRotationBezier (params, nodeInfo, step) {
     }
     c = applyToPoint(rotate(prevAngle), c);
 
-    let transform = rotateDEG(angle, c.x, -c.y);
-    transform.f = -transform.f;
+    let transform = rotateDEG(angle, c.x, c.y);
 
    return transform;
 }
@@ -224,7 +288,7 @@ export function getOpacityBezier (params, step) {
     for (let i = 0; i<step; i++){
 
         alpha = alpha * (1 + (params.opacity / 100 - 1) * params['curve-values'][i].normalizedGap);
-        console.log(i, alpha)
+        console.log(i, alpha);
     }
     console.log(alpha)
     return alpha;
