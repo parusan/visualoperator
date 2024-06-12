@@ -42,7 +42,8 @@ export function getTranslationFixed (params, step) { // dimension is the size of
 
     let matrix = translate(tx,ty);
     let result = {
-        't': matrix
+        't': matrix,
+        'r': getIdentityMatrix()
     }
     return result;
 }
@@ -59,7 +60,8 @@ export function getTranslationBezier (params,step) {
 
     let matrix = translate(tx,ty);
     let result = {
-        't': matrix
+        't': matrix,
+        'r': getIdentityMatrix()
     }
     return result;
 }
@@ -68,26 +70,26 @@ export function getTranslationBezier (params,step) {
 // ***********************************************
 
 // Calculating the rotation matrix
-export function getRotationFixed (params, nodeInfo) {
+export function getRotationFixed (params, nodeInfo, shift) {
 
     let angle=params.angle*(Math.PI/180);
     console.log('new angle', angle)
-    return getRotation(angle, params, nodeInfo);
+    return getRotation(angle, params, nodeInfo, shift);
 
 }
 
 
 // Returns a matrix with the angles based on the values of the control points
-export function getRotationBezier (params, nodeInfo, step) {
+export function getRotationBezier (params, nodeInfo, step, shift) {
 
     let angle = params.angle * params['curve-values'][step].normalizedGap*(Math.PI/180);
     console.log('new angle', angle, 'step', step)
-    return getRotation(angle, params, nodeInfo);
+    return getRotation(angle, params, nodeInfo, shift);
 }
 
 // Calculating the rotation matrix
-export function getRotation (angle, params, nodeInfo) {
-
+export function getRotation (angle, params, nodeInfo, shift) {
+    console.log(shift);
     let width = nodeInfo.width;
     let height= nodeInfo.height;
     let origin = params.origin;
@@ -97,26 +99,36 @@ export function getRotation (angle, params, nodeInfo) {
     }
     result.r=rotate(angle);
 
-    // We calculate the original position of the center
 
-    // We define the original positions on x and y as =0 as we will combine the matrices with the original matrix that defines the object rotation and position
-    let o = { 'x':nodeInfo.x, 'y':nodeInfo.y }
-    // First we get the center of the object
-    let c = { 
-        'x' : o.x - (origin.zoom-1)/2*width+origin.x*origin.zoom*width,
-        'y' : o.y - (origin.zoom-1)/2*height+origin.y*origin.zoom*height
+    // We calculate the original position of the center
+    let o = { 'x':nodeInfo.x, 'y':nodeInfo.y}
+    let o2 = { 'x':nodeInfo.x+shift.x, 'y':nodeInfo.y+shift.y} // we include the shift due to scale
+
+    // First we get the center of rotation of the object, accounting for a possible scaling
+    let c2 = { 
+        'x' : o2.x - (origin.zoom-1)/2*width*shift.s+origin.x*origin.zoom*width*shift.s,
+        'y' : o2.y - (origin.zoom-1)/2*height*shift.s+origin.y*origin.zoom*height*shift.s
     }
+
+    // We rotate the center around the origin as it is how the Transform matrix is stored in Figma
+    // We use here the original object rotation, not the one we want to apply now
     let rorigin = rotate(-nodeInfo.angle, o.x, o.y)
-    c = applyToPoint(rorigin, c);
-    console.log(nodeInfo.angle)
-    console.log('rotated center', c)
-    let no = { // The new origin after rotation
-        'x': (o.x-c.x)*Math.cos(angle) + (o.y-c.y)* Math.sin(angle) + c.x,
-        'y': -(o.x-c.x)*Math.sin(angle) + (o.y-c.y)* Math.cos(angle) + c.y
+    c2 = applyToPoint(rorigin, c2);
+    console.log(nodeInfo.angle);
+
+    // We also rotate the origin of the scaled up version (if any) 
+    let o2r = applyToPoint(rorigin, o2);
+
+    // And calculate the new position of the origin of the rotated scaled object
+    // We apply here the new rotation for that step
+    // Note: we dont account for the translation between non scaled and scaled object as it is covered in the original scale transformation
+    let no = { // The distance to the new center
+        'x': (o2r.x-c2.x)*Math.cos(angle) + (o2r.y-c2.y)* Math.sin(angle) + c2.x,
+        'y': -(o2r.x-c2.x)*Math.sin(angle) + (o2r.y-c2.y)* Math.cos(angle) + c2.y
     }
     // TODO: BETTER CALCULATE ORIGIN POSITION IF ALREADY ROTATED AT FIRST
-
-    result.t=translate(no.x - o.x, no.y - o.y);
+    // Finally we get the distance between the original position of the scaled up origin and the rotated version with the new angle
+    result.t=translate(no.x - o2.x, no.y - o2.y); // Usually the difference between the initial origin and the new one
 
     return result;
 }
@@ -128,82 +140,46 @@ export function getRotation (angle, params, nodeInfo) {
 // ******************** SCALE 
 // ***********************************************
 
-export function getScaleMatrices (settings, repeat, nodeInfo) {
-    if (settings.params['scale-mode']==='Fixed') {
-        return getFixedScale(repeat, settings, nodeInfo);
-    }
-    if (settings.params['scale-mode']==='Bezier') {
-         return getBezierScale(settings.params['bezier-controls-scale'], repeat, settings, nodeInfo);
-        }
-}
 
 // Calculating the rotation matrix
-export function getFixedScale (repeat, settings, nodeInfo) {
-    let result={
-        'translations':[],
-        'scale':[]
-    };
-    // Init the first step
-    let sc = settings.params.scale/100;
-    let newScale = 1;
-    result.scale.push(newScale);
+export function getScaleFixed (params, nodeInfo) {
 
-    let tx=0;
-    let ty=0;
-    let matrix = translate(tx,ty);
-    result.translations.push(matrix);
-
-    for(var i=0; i<repeat-1; i++) {
-
-        // First we generate the scales
-        newScale = newScale * sc;
-        result.scale.push(newScale);
-
-        // We translate to adapt to the origin
-
-        // FOR NOW: MOVE TO THE CENTER
-
-        tx=nodeInfo.width*(1-newScale)*settings.params.origin.x;
-        ty=nodeInfo.height*(1-newScale)*settings.params.origin.y;
-        let matrix = translate(tx,ty);
-        result.translations.push(matrix);
-    }
-    return result;
+    let scale = params.scale/100;
+    console.log('Scaling by', scale)
+    return getScale(scale, params, nodeInfo);
 }
 
 
 // Returns a matrix with the angles based on the values of the control points
-export function getBezierScale (controls,repeat, settings, nodeInfo) {
-    let result={
-        'translations':[],
-        'scale':[]
-    };
-    let sc = settings.params.scale/100 - 1;
-    let bezierMatrix = getNormalizedBezier(controls,repeat);
+export function getScaleBezier (params, nodeInfo, step) {
 
-    let totalSoFar = sc;
-
-    let tx=0;
-    let ty=0;
-    let matrix = translate(tx,ty);
-
-    for(var i=0; i<repeat; i++) {
-        // Calculations for the spacing
-        let stepSize = bezierMatrix[i].normalizedGap;
-        totalSoFar = totalSoFar + stepSize*sc;
-        result.scale.push(1+totalSoFar);
-
-        tx=nodeInfo.width*(1-(1+totalSoFar))*settings.params.origin.x;
-        ty=nodeInfo.height*(1-(1+totalSoFar))*settings.params.origin.y;
-
-        let matrix = translate(tx,ty);
-        result.translations.push(matrix);
-    }
-    return result;
+    let scale = 1 + ((params.scale - 100) / 100 * params['curve-values'][step].normalizedGap);
+    console.log('step scale', scale, 'step', step)
+    return getScale(scale, params, nodeInfo);
 
 }
 
+export function getScale (scale, params, nodeInfo) {
+    let result={
+        'translation': {},
+        'scale': 1
+    };
 
+    result.scale = scale;
+
+    // Then we calculate the necessary translation
+    let tx=0;
+    let ty=0;
+    console.log(params.origin)
+    tx=nodeInfo.width*(1-scale)*params.origin.x;
+    ty=nodeInfo.height*(1-scale)*params.origin.y;
+    let matrix = translate(tx,ty);
+    result.translation = matrix;
+
+    console.log('scale', result)
+
+    return result;
+}
 
 // ******************** OPACITY 
 // ***********************************************
