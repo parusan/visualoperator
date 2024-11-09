@@ -97,7 +97,7 @@ export function getRotation (angle, params, nodeInfo, shift) {
         't': {},
         'r': {}
     }
-    result.r=rotate(angle);
+
 
 
     // We calculate the original position of the center
@@ -115,7 +115,7 @@ export function getRotation (angle, params, nodeInfo, shift) {
     let rorigin = rotate(-nodeInfo.angle, o.x, o.y)
     c2 = applyToPoint(rorigin, c2);
     console.log(nodeInfo.angle);
-
+    result.r=rotate(angle);
     // We also rotate the origin of the scaled up version (if any) 
     let o2r = applyToPoint(rorigin, o2);
 

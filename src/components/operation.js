@@ -8,7 +8,8 @@ template.innerHTML = /* html */ `
   .operation-preview {
     padding: 0 8px 0 16px;
     display: flex;
-    gap: 4px;
+    gap: 0px;
+    align-items: center;
   }
   .operation-preview > .figma-select{
     flex:1;
@@ -69,6 +70,7 @@ template.innerHTML = /* html */ `
 
   #overview {
     line-height: 32px;
+    padding-left: 4px;
     overflow: hidden;
     white-space: nowrap;
   overflow: hidden;
@@ -78,6 +80,42 @@ template.innerHTML = /* html */ `
   .spacer-bottom {
     border-bottom: 1px solid var(--figma-color-border);
   }
+
+  .actions-container, .actions {
+    display: flex; 
+    flex-direction: row;
+    width: 32px;
+    height: 32px;
+    justify-content: end;
+    border-radius: 4px;
+  }
+    
+    .actions {
+      min-width: 32px;
+      transition: min-width ease-out 0.1s 0.1s, border-color ease-out 0.2s;
+      overflow: hidden;
+      border: 1px solid transparent;
+      background: var(--figma-color-bg);
+      padding: 0;
+    }
+    .actions:hover {
+    min-width: 64px;
+      box-shadow: var(--elevation-500-modal-window, 0px 2px 14px rgba(0, 0, 0, .15), 0px 0px 0px 0.5px rgba(0, 0, 0, .2));
+      /* border-color: var(--figma-color-border); */
+      position: relative;
+      padding: 4px;
+      top: -4px;
+      right: -4px;
+    }
+
+    .drag-handle {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--figma-color-bg-secondary);
+    cursor: grab;
+    }
+
   /* width */
   ::-webkit-scrollbar {
       width: 8px;
@@ -102,11 +140,17 @@ template.innerHTML = /* html */ `
 
   <div class="operation-container">
     <div class="operation-preview">
+      <div class="drag-handle"></div>
       <icon-button class="small-flex" id="open" action="open-settings" icon="translation" tooltip="Open settings"></icon-button>
       <figma-select values="Translation|Rotation|Scale|Opacity" default-value="Translation" id="type" role="type" class='figma-select' size="S" tooltip="Select type of transformation">
       </figma-select>
       <div class="label" id="overview">Bézier</div>
-      <icon-button class="small-flex" id="del" action="del" icon="remove" tooltip="Remove operation"></icon-button>
+      <div class="actions-container" id="actions-containter">
+        <div class="actions" id="actions">
+         <icon-button class="small-flex" id="cloneop" action="cloneop" icon="clone" tooltip="Clone operation"></icon-button>
+          <icon-button class="small-flex" id="del" action="del" icon="remove" tooltip="Remove operation"></icon-button>
+        </div>
+      </div>
     </div>
     <div id="settings">
       <div id="settings-header">
@@ -125,7 +169,7 @@ class Operation extends HTMLElement {
     constructor() {
       super();
       this.componentId='';
-      this.details={};
+      this.detailsInit={};
       this.params={};
       this.type="Translation";
       this.parent="";
@@ -169,15 +213,22 @@ class Operation extends HTMLElement {
 
   set _details(details){
     // If we are here, we know that the type is ok
-    this.details={...details};
+    this.detailsInit={...details};
     this.params={...details.params};
     this.setType(details.type);
   }
 
   get _details(){
-    return this.details;
+    return this.detailsInit;
   }
 
+  get _params(){
+    return this.params;
+  }
+
+  get _type(){
+    return this.type;
+  }
 
   openSettings(){this.shadowRoot.querySelector('#settings').classList.add('open'); }
   closeSettings(){this.shadowRoot.querySelector('#settings').classList.remove('open');}
@@ -193,12 +244,14 @@ class Operation extends HTMLElement {
 
       // We also set the action of the del button here
       this.shadowRoot.querySelector('#del').setAttribute('action', "del-op|"+this.componentId);
+      this.shadowRoot.querySelector('#cloneop').setAttribute('action', "clone-op|"+this.componentId);
     }
 
     setFlow(flowId){
       if(flowId) {
         this.flow=flowId;
         this.shadowRoot.querySelector('#del').setAttribute('parent', this.flow);
+        this.shadowRoot.querySelector('#cloneop').setAttribute('parent', this.flow);
       }
     }
 

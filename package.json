@@ -20,6 +20,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "sortablejs": "^1.15.2",
     "transformation-matrix": "^2.15.0"
   }
 }

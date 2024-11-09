@@ -1,4 +1,6 @@
 import * as refs from '../res/refs.js';
+import Sortable from 'sortablejs';
+
 const template = document.createElement("template");
 template.innerHTML = /* html */ `
   <style>
@@ -32,6 +34,9 @@ template.innerHTML = /* html */ `
     align-items: center;
     opacity: 0.6;
   }
+    .sortable-ghost {
+    opacity: 0.5;
+    }
   </style>
   <div class="flow-container">
     <div class="label-row">
@@ -60,6 +65,7 @@ class OpFlow extends HTMLElement {
       const shadowRoot = this.attachShadow({ mode: "open" });
       shadowRoot.appendChild(template.content.cloneNode(true));
 
+
         // We listen for events from buttons
         this.addEventListener("trigger", function(e) { 
           if (e.detail.parent===this.componentId && e.detail.action==="add-op") {
@@ -68,6 +74,11 @@ class OpFlow extends HTMLElement {
           if (e.detail.parent===this.componentId && e.detail.action.includes("del-op")){
             if(e.detail.action.split("|").length===2) {
               this.removeOperation(e.detail.action.split("|")[1]);
+            }
+          }
+          if (e.detail.parent===this.componentId && e.detail.action.includes("clone-op")){
+            if(e.detail.action.split("|").length===2) {
+              this.cloneOperation(e.detail.action.split("|")[1]);
             }
           }
         });
@@ -146,6 +157,7 @@ class OpFlow extends HTMLElement {
       this.shadowRoot.querySelector('#add').setAttribute('parent', this.componentId);
       this.shadowRoot.querySelector('#del').setAttribute('parent', this.componentId);
       this.shadowRoot.querySelector('#repeat').setAttribute('parent', this.componentId);
+      this.shadowRoot.querySelector('#ops-container').setAttribute('id', "ops-container-"+this.componentId);
     }
 
     initRepeat(val) {
@@ -187,7 +199,7 @@ class OpFlow extends HTMLElement {
       // console.log('adding to view ' + JSON.stringify(op))
       const opTemplate = document.createElement('template');
       opTemplate.innerHTML = `<op-details class="tf" id="${op.id}" flow="${op.flow}"></op-details>`;
-      this.shadowRoot.getElementById('ops-container').append(...opTemplate.content.children);
+      this.shadowRoot.getElementById("ops-container-"+this.componentId).append(...opTemplate.content.children);
 
       let details = {
         type: op.type,
@@ -196,7 +208,8 @@ class OpFlow extends HTMLElement {
 
       customElements.whenDefined("op-details").then(() => {
         this.shadowRoot.getElementById(op.id)._details=details;
-     });     
+     });
+      
     }
 
     getID(){
@@ -219,12 +232,50 @@ class OpFlow extends HTMLElement {
       }
    }
 
+   cloneOperation(id){
+      let operation = this.shadowRoot.getElementById(id);
+      let op={
+        id: this.getID(),
+        flow: this.componentId,
+        type: operation.type,
+        params: {...operation.params}
+      };
+      this.ops.push(op);
+      // Then we add it to the UI
+      this.addOpToView(op);
+      // And we update the data at the plugin level
+      this.register();
+   }
+
 
     connectedCallback(){ // Called when inserted into DOM
       // Initialization of the attributes
       this.setId(this.getAttribute('id'));
       this.setTitle(this.getAttribute('name'));
+
+
+      // TODO
+      // REMOVE SORTABLE? AND REPLACE WITH HOMEMADE DRAG AND DROP
+      console.log('getting ' + "ops-container-"+this.componentId);
+      this.initSortable();
+
   }
+
+  initSortable() {
+    var el = this.shadowRoot.getElementById("ops-container-"+this.componentId);
+    let that = this;
+    Sortable.create(el, {
+      handle: '.drag-handle',
+      setData: function (/** DataTransfer */dataTransfer, /** HTMLElement*/dragEl) {
+        
+        let draggedElt = that.shadowRoot.getElementById(Sortable.dragged.id);
+        const img = new Image()
+        dataTransfer.setDragImage(img, 10, 10); // `dataTransfer` object of HTML5 DragEvent
+
+      },
+    }); 
+  }
+
 
 
 }

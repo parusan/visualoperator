@@ -188,6 +188,12 @@ this.save=`  <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/
 <path fill-rule="evenodd" clip-rule="evenodd" d="M6 1.5C6.27614 1.5 6.5 1.72386 6.5 2V6.79289L7.64645 5.64645C7.84171 5.45118 8.15829 5.45118 8.35355 5.64645C8.54882 5.84171 8.54882 6.15829 8.35355 6.35355L6.35355 8.35355C6.15829 8.54882 5.84171 8.54882 5.64645 8.35355L3.64645 6.35355C3.45118 6.15829 3.45118 5.84171 3.64645 5.64645C3.84171 5.45118 4.15829 5.45118 4.35355 5.64645L5.5 6.79289V2C5.5 1.72386 5.72386 1.5 6 1.5Z" fill="#C3C3C3"/>
 </svg>
 `; 
+this.clone=`<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M12 7H8C7.44772 7 7 7.44772 7 8V12C7 12.5523 7.44772 13 8 13H12C12.5523 13 13 12.5523 13 12V8C13 7.44772 12.5523 7 12 7ZM8 6C6.89543 6 6 6.89543 6 8V12C6 13.1046 6.89543 14 8 14H12C13.1046 14 14 13.1046 14 12V8C14 6.89543 13.1046 6 12 6H8Z" fill="#C3C3C3"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M4 3H8C8.55228 3 9 3.44772 9 4V6H10V4C10 2.89543 9.10457 2 8 2H4C2.89543 2 2 2.89543 2 4V8C2 9.10457 2.89543 10 4 10H7V9H4C3.44772 9 3 8.55228 3 8V4C3 3.44772 3.44772 3 4 3Z" fill="#C3C3C3"/>
+</svg>
+
+`; 
 
 
       // Attach a shadow root to <bezier-input>.
@@ -255,6 +261,7 @@ this.save=`  <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/
     if (type==='repeat') return this.repeat;
     if (type==='load') return this.load;
     if (type==='save') return this.save;
+    if (type==='clone') return this.clone;
     return this.standard;
   }
 
